@@ -8,7 +8,9 @@ const { install } = require('./gas-mock');
 
 const env = install(globalThis);
 const dir = path.join(__dirname, '..', 'apps-script');
-vm.runInThisContext(fs.readFileSync(path.join(dir, 'Seed.gs'), 'utf8') + '\n' + fs.readFileSync(path.join(dir, 'Code.gs'), 'utf8'), { filename: 'Code.gs' });
+// CODE_FILE lets the mutation run point at a .js copy (Stryker can't parse the .gs extension).
+const codeFile = process.env.CODE_FILE ? path.resolve(__dirname, process.env.CODE_FILE) : path.join(dir, 'Code.gs');
+vm.runInThisContext(fs.readFileSync(path.join(dir, 'Seed.gs'), 'utf8') + '\n' + fs.readFileSync(codeFile, 'utf8'), { filename: 'Code.gs' });
 
 let passed = 0;
 function test(name, fn) {

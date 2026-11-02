@@ -96,7 +96,10 @@
     var qw = strip(q), nw = strip(name);
     if (qw.length && qw.every(function (w) { return nw.some(function (x) { return x.indexOf(w) === 0; }); })) return 0.9;
     if (kn.indexOf(kq) >= 0) return 0.8;
-    return Math.max(dice(kq, kn), dice(kq, kn.slice(0, kq.length + 2))) * 0.75;
+    // typo tolerance: compare with the whole name, its start, and each word ("yafnido" → YAFINDO)
+    var best = Math.max(dice(kq, kn), dice(kq, kn.slice(0, kq.length + 2)));
+    nw.forEach(function (w) { best = Math.max(best, dice(kq, w) * 1.07); });
+    return Math.min(best * 0.75, 0.79);
   }
   function suppliers() { return (S.boot && S.boot.suppliers) || []; }
   function findSupplier(n) { var k = key(n); var l = suppliers(); for (var i = 0; i < l.length; i++) if (key(l[i]) === k) return l[i]; return ''; }
@@ -156,7 +159,7 @@
       if (authFail(r)) return;
       if (r.ok) {
         S.queue = S.queue.filter(function (o) { return o.qid !== next.qid; }); persistQueue();
-        delete S.hist[next.entry.date.slice(0, 7)]; save('hist', S.hist);
+        outdated(next.entry.date.slice(0, 7));
         if (!S.queue.length) toast('Transaksi yang tertunda sudah terkirim ✓', 'ok');
         return refresh(true).then(function () { rerenderIf(['home', 'history']); return flush(); });
       }
@@ -166,14 +169,14 @@
     }, function () { flushing = false; });
   }
   function rerenderIf(list) { if (list.indexOf(S.screen) >= 0 && !$('#ov')) render(); }
-  window.addEventListener('online', function () { flush(); });
+  window.addEventListener('online', function () { flush(); if (S.screen === 'history') { failedAt = {}; loadMonth(S.month || today().slice(0, 7)); } });
   setInterval(function () { if (navigator.onLine !== false) flush(); }, 30000);
 
   // ───────────── navigation (phone back button works) ─────────────
   function go(screen, replace) {
     if (S.screen === 'done') replace = true; // the success screen is never a back-button target
     S.screen = screen;
-    var tt = $('#toast'); if (tt && tt.className.indexOf('ok') < 0) tt.className = 'toast';
+    var tt = $('#toast'); if (tt) tt.className = 'toast';
     try { history[replace ? 'replaceState' : 'pushState']({ s: screen }, '', location.pathname + location.search); } catch (e) { }
     render(); window.scrollTo(0, 0);
   }
@@ -280,7 +283,7 @@
     // 1 name
     var nameHtml;
     if (f.name) nameHtml = '<div class="picked"><b>' + esc(f.name) + (f.isNew ? ' <span class="new">BARU</span>' : '') + '</b><button class="btn small outline" data-act="unpick">Ganti</button></div>';
-    else nameHtml = '<input class="in" id="q" autocomplete="off" autocapitalize="characters" maxlength="60" placeholder="Cari nama PT atau barang…" value="' + esc(f.q) + '"><div id="sugg"></div>' +
+    else nameHtml = '<input class="in" id="q" autocomplete="off" autocapitalize="characters" maxlength="60" placeholder="Cari nama PT / barang…" value="' + esc(f.q) + '"><div id="sugg"></div>' +
       (f.q ? '' : '<div class="hint">Sering dipakai:</div><div class="chips" id="freq">' + frequent().map(function (n) { return '<button class="chip" data-act="pick" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>');
     h += step(1, 'st-name', 'Nama PT / Barang', false, nameHtml, e.name);
     // 2 invoice
@@ -350,7 +353,7 @@
     var h = bar('Cek Lagi', true) + '<div class="hint center">Cek lagi sebelum simpan.</div><div class="card review"><dl>' +
       '<dt>Nama PT / Barang' + ch('name') + '</dt><dd>' + esc(en.name) + '</dd>' +
       '<dt>No. Invoice' + ch('invoice') + '</dt><dd>' + (en.invoice ? esc(en.invoice) : '<span class="muted">—</span>') + '</dd>' +
-      '<dt>Nominal' + ch('amount') + '</dt><dd class="money">' + rp(en.amount) + '</dd><div class="hint">' + esc(words(en.amount)) + '</div>' +
+      '<dt>Nominal' + ch('amount') + '</dt><dd class="money">' + rp(en.amount) + '<span class="words-sm">' + esc(words(en.amount)) + '</span></dd>' +
       '<dt>Bayar pakai' + ch('paidFrom') + '</dt><dd>' + esc(en.paidFrom) + '</dd>' +
       '<dt>Tanggal' + ch('date') + '</dt><dd>' + esc(longDate(en.date)) + '</dd>' +
       (en.note || (o && o.note) ? '<dt>Catatan' + ch('note') + '</dt><dd class="note">' + (en.note ? esc(en.note) : '<span class="muted">—</span>') + '</dd>' : '') +
@@ -388,10 +391,10 @@
   }
   function saved(en, offline) {
     S.usage[en.name] = (S.usage[en.name] || 0) + 1; save('usage', S.usage);
-    delete S.hist[en.date.slice(0, 7)];
-    if (S.form && S.form.orig) delete S.hist[S.form.orig.date.slice(0, 7)];
-    save('hist', S.hist);
+    if (S.form && S.form.orig) patchCache(S.form.orig, en);
+    outdated(en.date.slice(0, 7));
     lastSaved = { entry: en, offline: offline, edit: S.form && S.form.mode === 'edit' };
+    if (lastSaved.edit) S.month = en.date.slice(0, 7);
     S.form = null;
     go('done', true);
     if (!offline) refresh(true).then(flush);
@@ -402,7 +405,7 @@
     return bar(title) + '<div class="done"><div class="ok ' + (l.offline ? 'wait' : '') + '">' + (l.offline ? '⏳' : '✓') + '</div><h2>' + esc(title) + '</h2>' +
       '<p class="hint big">' + (l.offline ? 'Tidak ada koneksi internet. Transaksi tersimpan di HP dan akan dikirim otomatis saat ada sinyal.' : 'Sudah masuk ke spreadsheet.') + '</p>' +
       '<div class="card left"><b>' + esc(en.name) + '</b><div class="meta">' + rp(en.amount) + ' · ' + esc(en.paidFrom) + ' · ' + esc(shortDate(en.date || today())) + '</div></div></div>' +
-      (l.edit ? '<div class="stack"><button class="btn primary" data-act="history">Kembali ke Riwayat</button><button class="btn outline" data-act="home">Ke Beranda</button></div>'
+      (l.edit ? '<div class="stack"><button class="btn primary" data-act="history" data-v="keep">Kembali ke Riwayat</button><button class="btn outline" data-act="home">Ke Beranda</button></div>'
         : '<div class="stack"><button class="btn primary" data-act="new"><span class="plus-s">+</span> Catat Lagi</button><button class="btn outline" data-act="home">Ke Beranda</button></div>');
   }
 
@@ -411,26 +414,38 @@
     var ym = S.month || today().slice(0, 7), cur = today().slice(0, 7);
     var data = S.hist[ym];
     var h = bar('Riwayat Transaksi', true);
-    var pend = S.queue.filter(function (o) { return o.entry.date.slice(0, 7) === ym || o.state === 'conflict'; });
     h += '<div class="monthnav"><button class="btn small outline" data-act="month" data-v="-1" aria-label="Bulan sebelumnya">‹ ' + esc(BLN[parse(addMonths(ym, -1) + '-01').getMonth()]) + '</button>' +
       '<b>' + esc(monthName(ym)) + '</b>' +
       '<button class="btn small outline" data-act="month" data-v="1"' + (ym >= cur ? ' disabled' : '') + ' aria-label="Bulan berikutnya">' + esc(BLN[parse(addMonths(ym, 1) + '-01').getMonth()]) + ' ›</button></div>';
-    h += '<input class="in search" id="hq" type="search" autocomplete="off" placeholder="Cari nama PT atau no. invoice" value="' + esc(S.query) + '">';
+    h += '<input class="in search" id="hq" type="search" autocomplete="off" placeholder="Cari nama PT / no. invoice" value="' + esc(S.query) + '">';
+    return h + '<div id="pend">' + pendList(ym) + '</div><div id="hlist">' + histList(ym, data) + '</div>';
+  }
+  // Entries still on this phone: conflicts first ("Perlu dicek"), then waiting for internet. Follows the search box.
+  function pendList(ym) {
+    var h = '';
+    var qk = key(S.query);
+    var pend = S.queue.filter(function (o) { return (o.entry.date.slice(0, 7) === ym || o.state === 'conflict') && (!qk || key(o.entry.name).indexOf(qk) >= 0 || key(o.entry.invoice).indexOf(qk) >= 0); })
+      .sort(function (a, b) { return (a.state === 'conflict' ? 0 : 1) - (b.state === 'conflict' ? 0 : 1); });
     if (pend.length) {
-      h += '<div class="group-head warn">Belum terkirim</div>' + pend.map(function (o) {
-        return '<div class="item' + (o.state === 'conflict' ? ' conflict' : '') + '"><div class="top"><div class="nm">' + esc(o.entry.name) + '</div><div class="amt">' + rp(o.entry.amount) + '</div></div>' +
+      var lastHead = '';
+      h += pend.map(function (o) {
+        var head = o.state === 'conflict' ? 'Perlu dicek' : 'Belum terkirim';
+        var hh = head !== lastHead ? '<div class="group-head ' + (o.state === 'conflict' ? 'err' : 'warn') + '">' + head + '</div>' : '';
+        lastHead = head;
+        return hh + '<div class="item' + (o.state === 'conflict' ? ' conflict' : '') + '"><div class="top"><div class="nm">' + esc(o.entry.name) + '</div><div class="amt">' + rp(o.entry.amount) + '</div></div>' +
           '<div class="meta">' + esc(o.entry.paidFrom) + ' · ' + esc(shortDate(o.entry.date)) + '</div>' +
           (o.state === 'conflict' ? '<div class="err-msg">' + esc(o.error) + (o.existing ? ' (sudah dicatat ' + esc(shortDate(o.existing.date)) + ' oleh ' + esc(o.existing.by) + ', ' + rp(o.existing.amount) + ')' : '') + '</div>' +
             '<div class="acts"><button class="btn small outline" data-act="qdrop" data-v="' + esc(o.qid) + '">Buang (dobel)</button><button class="btn small primary" data-act="qforce" data-v="' + esc(o.qid) + '">Tetap simpan</button></div>'
             : '<div class="acts"><span class="badge wait">Menunggu internet</span><button class="btn small outline" data-act="qdrop" data-v="' + esc(o.qid) + '">Batalkan</button></div>') + '</div>';
       }).join('');
     }
-    return h + '<div id="hlist">' + histList(ym, data) + '</div>';
+    return h;
   }
   function histList(ym, data) {
     var h = '';
     if (!data) return '<div class="spinner" aria-label="Memuat"></div>';
-    if (data.stale) h += '<div class="banner warn">Tidak ada koneksi internet. Menampilkan data terakhir.</div>';
+    if (data.failed) return '<div class="banner err">' + esc(data.failed) + ' Riwayat bulan ini belum bisa dimuat.<button class="btn small outline" data-act="reload">Coba lagi</button></div>';
+    if (data.stale) h += '<div class="banner warn">' + esc(data.stale) + ' Menampilkan data terakhir.<button class="btn small outline" data-act="reload">Coba lagi</button></div>';
     var q = key(S.query), list = data.entries.filter(function (e) { return !q || key(e.name).indexOf(q) >= 0 || key(e.invoice).indexOf(q) >= 0 || score(S.query, e.name) >= 0.6; });
     var total = list.reduce(function (s, e) { return s + e.amount; }, 0);
     h += '<div class="card total"><div class="hint">' + (q ? 'Hasil cari · ' : 'Total ' + esc(monthName(ym)) + ' · ') + list.length + ' transaksi</div><div class="big">' + rp(total) + '</div></div>';
@@ -447,17 +462,46 @@
     });
     return h;
   }
+  // Month cache: shown at once (also offline), refreshed in the background when older than a minute.
+  var loading = {}, failedAt = {};
+  function curMonth() { return S.month || today().slice(0, 7); }
+  function needLoad(ym) {
+    var c = S.hist[ym];
+    if (loading[ym] || (failedAt[ym] && Date.now() - failedAt[ym] < 15000)) return false;
+    return !c || !!c.stale || !!c.failed || Date.now() - (c.at || 0) > 60000;
+  }
+  function redrawList(ym) {
+    if (S.screen !== 'history' || curMonth() !== ym || $('#ov')) return;
+    var box = $('#hlist'); if (box) box.innerHTML = histList(ym, S.hist[ym]); else render();
+  }
   function loadMonth(ym) {
+    if (loading[ym]) return;
+    loading[ym] = true;
     api('list', { month: ym }).then(function (r) {
+      loading[ym] = false;
       if (authFail(r)) return;
-      if (!r.ok) { toast(r.error || 'Gagal memuat riwayat.', 'err'); return; }
+      if (!r.ok) { failedAt[ym] = Date.now(); loadFailed(ym, r.error || 'Gagal memuat riwayat.'); return; }
+      delete failedAt[ym];
       S.hist[ym] = { entries: r.entries, total: r.total, at: Date.now() }; save('hist', trimHist());
-      if (S.screen === 'history' && (S.month || today().slice(0, 7)) === ym && !$('#ov')) render();
-    }, function () {
-      var c = S.hist[ym];
-      S.hist[ym] = c ? Object.assign({}, c, { stale: true }) : { entries: [], total: 0, stale: true };
-      if (S.screen === 'history') render();
-    });
+      redrawList(ym);
+    }, function () { loading[ym] = false; failedAt[ym] = Date.now(); loadFailed(ym, 'Tidak ada koneksi internet.'); });
+  }
+  function loadFailed(ym, msg) {
+    var c = S.hist[ym];
+    S.hist[ym] = c && c.entries ? Object.assign({}, c, { stale: msg, failed: '' }) : { failed: msg };
+    redrawList(ym);
+  }
+  function outdated(ym) { var c = S.hist[ym]; if (c && c.entries) { c.at = 0; save('hist', S.hist); } }
+  // Show an edit or delete in the list right away; the background refresh then confirms it.
+  function patchCache(orig, en) {
+    var ym = orig.date.slice(0, 7), c = S.hist[ym]; if (!c || !c.entries) return;
+    c.entries = c.entries.filter(function (x) { return x.id !== orig.id; });
+    if (en && en.date.slice(0, 7) === ym) {
+      c.entries.push(Object.assign({}, orig, en, { editedBy: S.user ? S.user.name : '' }));
+      c.entries.sort(function (x, y) { return x.date !== y.date ? (x.date < y.date ? 1 : -1) : (x.at < y.at ? 1 : -1); });
+    }
+    c.total = c.entries.reduce(function (s, x) { return s + x.amount; }, 0); c.at = 0;
+    save('hist', S.hist);
   }
   function trimHist() { var ks = Object.keys(S.hist).sort().reverse().slice(0, 3); var o = {}; ks.forEach(function (k) { o[k] = S.hist[k]; }); S.hist = o; return o; }
   function findEntry(id) { var ym = S.month || today().slice(0, 7); return ((S.hist[ym] && S.hist[ym].entries) || []).filter(function (e) { return e.id === id; })[0]; }
@@ -543,7 +587,7 @@
           if (authFail(r)) return;
           if (!r.ok) { toast(r.error || 'Gagal menghapus.', 'err'); return; }
           toast('Transaksi dihapus ✓', 'ok');
-          delete S.hist[e.date.slice(0, 7)]; render(); loadMonth(e.date.slice(0, 7)); refresh(true);
+          patchCache(e, null); render(); refresh(true);
         }, function () { closeSheet(); toast('Tidak ada koneksi internet. Coba lagi nanti.', 'err'); });
       });
   }
@@ -560,7 +604,7 @@
       '<div class="stack"><button class="btn danger" data-v="out">Keluar</button><button class="btn outline" data-v="">Batal</button></div>', function (b) {
         closeSheet(); if (!b.getAttribute('data-v')) return;
         api('logout').catch(function () { });
-        S.token = ''; S.user = null; drop('token'); drop('user'); S.hist = {}; drop('hist'); go('login', true);
+        S.token = ''; S.user = null; drop('token'); drop('user'); S.hist = {}; drop('hist'); S.month = ''; S.query = ''; go('login', true);
       });
   }
 
@@ -583,7 +627,7 @@
     if (q) {
       renderSugg();
       q.addEventListener('input', function () {
-        S.form.q = q.value; var fr = $('#freq'); if (fr) { if (fr.previousElementSibling) fr.previousElementSibling.remove(); fr.remove(); }
+        S.form.q = q.value; clearErr('st-name', 'name'); var fr = $('#freq'); if (fr) { if (fr.previousElementSibling) fr.previousElementSibling.remove(); fr.remove(); }
         renderSugg();
       });
       if (S.form && S.form._focus) { q.focus(); S.form._focus = false; }
@@ -601,10 +645,11 @@
     if (inv) inv.addEventListener('input', function () { clearErr('st-inv', 'invoice'); });
     var hq = $('#hq');
     if (hq) hq.addEventListener('input', function () {
-      S.query = hq.value; var ym = S.month || today().slice(0, 7), box = $('#hlist');
+      S.query = hq.value; var ym = curMonth(), box = $('#hlist'), pb = $('#pend');
       if (box) box.innerHTML = histList(ym, S.hist[ym]);
+      if (pb) pb.innerHTML = pendList(ym);
     });
-    if (S.screen === 'history') { var ym = S.month || today().slice(0, 7); if (!S.hist[ym] || S.hist[ym].stale === undefined && Date.now() - (S.hist[ym].at || 0) > 60000) loadMonth(ym); }
+    if (S.screen === 'history' && needLoad(curMonth())) loadMonth(curMonth());
   }
 
   document.addEventListener('click', function (ev) {
@@ -617,7 +662,7 @@
       case 'eye': var p = $('#lpw'); p.type = p.type === 'password' ? 'text' : 'password'; t.textContent = p.type === 'password' ? 'Lihat' : 'Sembunyikan'; break;
       case 'usename': $('#lname').value = v; $('#lpw').focus(); break;
       case 'new': S.form = newForm(); S.form._focus = true; go('form'); break;
-      case 'history': S.month = S.month || today().slice(0, 7); go('history'); break;
+      case 'history': if (v !== 'keep' || !S.month) { S.month = today().slice(0, 7); S.query = ''; } failedAt = {}; go('history'); break;
       case 'refresh': toast('Memuat ulang…'); refresh().then(flush); break;
       case 'flush': toast('Mengirim…'); flush(); break;
       case 'logout': logoutSheet(); break;
@@ -632,8 +677,9 @@
         if (!validate()) { render(); var first = $('.has-err'); if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('Ada yang belum diisi.', 'err'); return; }
         go('review'); break;
       case 'save': doSave(false); break;
-      case 'month': S.month = addMonths(S.month || today().slice(0, 7), Number(v)); render(); break;
+      case 'month': S.month = addMonths(S.month || today().slice(0, 7), Number(v)); failedAt = {}; render(); break;
       case 'detail': detailSheet(v); break;
+      case 'reload': failedAt[curMonth()] = 0; t.disabled = true; t.innerHTML = '<span class="spin"></span> Memuat…'; loadMonth(curMonth()); break;
       case 'qdrop': S.queue = S.queue.filter(function (o) { return o.qid !== v; }); persistQueue(); render(); toast('Dibatalkan.'); break;
       case 'qforce': S.queue.forEach(function (o) { if (o.qid === v) { o.force = true; o.state = 'waiting'; } }); persistQueue(); render(); flush(); break;
     }
@@ -663,5 +709,11 @@
   try { history.replaceState({ s: S.screen }, '', location.pathname + location.search); } catch (e) { }
   render();
   if (S.token) refresh(true).then(flush);
-  window.CatatApp = { state: S, terbilang: terbilang }; // for tests
+  // Exposed for the automated tests only (no secrets here; the server re-checks everything).
+  window.CatatApp = {
+    state: S, terbilang: terbilang, words: words, esc: esc, rp: rp, dots: dots, key: key, dice: dice, score: score, search: search,
+    frequent: frequent, today: today, addDays: addDays, addMonths: addMonths, longDate: longDate, shortDate: shortDate, monthName: monthName,
+    hhmm: hhmm, newForm: newForm, validate: validate, entryFromForm: entryFromForm, formDirty: formDirty, needLoad: needLoad,
+    patchCache: patchCache, histList: histList, pendList: pendList, isNet: isNet, trimHist: trimHist
+  };
 })();

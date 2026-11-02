@@ -1,0 +1,15 @@
+{
+  "name": "catat999",
+  "private": true,
+  "description": "Catat 999 — supplier payment recorder (PWA + Google Apps Script)",
+  "scripts": {
+    "test:backend": "cd tests && TZ=Asia/Jakarta node backend.test.js",
+    "test:ui": "node tests/ui.test.js",
+    "mutate:backend": "mkdir -p mutation-src && cp apps-script/Code.gs mutation-src/Code.js && stryker run stryker.backend.json",
+    "mutate:app": "stryker run stryker.app.json"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^8.7.1",
+    "axe-core": "^4.14.0"
+  }
+}

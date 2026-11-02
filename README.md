@@ -103,10 +103,16 @@ The monthly tab is read-only in practice, because it is rebuilt automatically. E
 
 ## Tests
 ```
-cd tests && TZ=Asia/Jakarta node backend.test.js        # Code.gs against an in-memory Sheet (31 tests)
-python3 -m http.server 8765 --directory web &
-node tests/ui.test.js /tmp/shots                         # phone + laptop click-through (72 checks, needs playwright)
+npm install                       # dev tools only (Stryker, axe-core); playwright is assumed installed
+npm run test:backend              # Code.gs against an in-memory Sheet
+node tests/app-logic.test.js      # the app's own logic in a real browser (amount in words, search, validation, cache)
+node tests/ui.test.js /tmp/shots  # click-through on a phone (360×740) and a laptop (1366×768)
+node tests/ui-walkthrough.js /tmp/walk   # every screen at 320, 360, 412 px and laptop: overflow, cut-off text,
+                                         # tap-target size, accessibility (axe-core); screenshots for review
+npm run mutate:backend            # mutation testing (Stryker): how many deliberate bugs the tests catch
+npm run mutate:app
 ```
+Reports land in `reports/mutation/*.html`.
 
 ## Files
 ```

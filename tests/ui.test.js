@@ -1,13 +1,24 @@
 // Drives the PWA (demo mode) in Chromium: a budget Android phone (360×740) and a laptop (1366×768).
-// Usage: node tests/ui.test.js <shots_dir>   (expects a static server on :8765 serving web/)
+// Usage: node tests/ui.test.js [shots_dir]
+//   WEB_DIR=…   serve a different copy of web/ (used by the mutation run)
+//   NO_SHOTS=1  skip screenshots (faster)
 'use strict';
 const { chromium } = require('playwright');
 const assert = require('assert');
+const path = require('path');
+const { serve } = require('./static-server');
 const SHOTS = process.argv[2] || '/tmp/shots';
-require('fs').mkdirSync(SHOTS, { recursive: true });
+const NO_SHOTS = !!process.env.NO_SHOTS;
+if (!NO_SHOTS) require('fs').mkdirSync(SHOTS, { recursive: true });
+// When Stryker runs this suite, tell the instrumented app.js which mutant is active.
+const ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
+const initMutant = ACTIVE_MUTANT ? `globalThis.__stryker__ = globalThis.__stryker__ || {}; globalThis.__stryker__.activeMutant = ${JSON.stringify(ACTIVE_MUTANT)};` : '';
 
 (async () => {
+  const srv = await serve(process.env.WEB_DIR ? path.resolve(process.env.WEB_DIR) : path.join(__dirname, '..', 'web'));
+  const BASE = srv.url;
   const browser = await chromium.launch();
+  const watchdog = setTimeout(() => { console.error('FAIL: suite took too long'); process.exit(1); }, 240000);
   const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'id-ID', timezoneId: 'Asia/Jakarta' });
   const page = await ctx.newPage();
   const errors = [];
@@ -15,7 +26,8 @@ require('fs').mkdirSync(SHOTS, { recursive: true });
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('dialog', d => { errors.push('unexpected dialog: ' + d.message()); d.dismiss(); });
   let step = 0, passed = 0;
-  const shot = async (name, p = page, full = true) => (await p.waitForTimeout(350), p.screenshot({ path: `${SHOTS}/${String(++step).padStart(2, '0')}-${name}.png`, fullPage: full }));
+  if (initMutant) await ctx.addInitScript(initMutant);
+  const shot = async (name, p = page, full = true) => NO_SHOTS ? null : (await p.waitForTimeout(350), p.screenshot({ path: `${SHOTS}/${String(++step).padStart(2, '0')}-${name}.png`, fullPage: full }));
   const ok = (cond, msg) => { assert.ok(cond, msg); passed++; console.log('  ✓', msg); };
   const btn = (t, root = 'body') => page.locator(`${root} button`, { hasText: t }).first();
   const tap = async (t, root) => btn(t, root).click();
@@ -23,7 +35,7 @@ require('fs').mkdirSync(SHOTS, { recursive: true });
   const text = async sel => (await page.locator(sel).first().textContent()) || '';
   const sheet = '#ov .sheet';
 
-  await page.goto('http://localhost:8765/index.html?demo=1');
+  await page.goto(BASE + '/index.html?demo=1');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector('#loginForm');
@@ -298,9 +310,10 @@ require('fs').mkdirSync(SHOTS, { recursive: true });
 
   // ── laptop size (Ibu at night) ──
   const lap = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'id-ID', timezoneId: 'Asia/Jakarta' });
+  if (initMutant) await lap.addInitScript(initMutant);
   const lp = await lap.newPage();
   lp.on('pageerror', e => errors.push('laptop: ' + e.message));
-  await lp.goto('http://localhost:8765/index.html?demo=1');
+  await lp.goto(BASE + '/index.html?demo=1');
   await lp.fill('#lname', 'Ibu'); await lp.fill('#lpw', 'ibu12345'); await lp.click('#loginBtn');
   await lp.waitForSelector('[data-act="new"]');
   await shot('laptop-home', lp, false);
@@ -320,5 +333,6 @@ require('fs').mkdirSync(SHOTS, { recursive: true });
 
   ok(errors.length === 0, 'no JavaScript errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await browser.close();
+  srv.close(); clearTimeout(watchdog);
   console.log(`\n${passed} UI checks passed`);
 })().catch(e => { console.error('FAIL:', e.message); process.exit(1); });
