@@ -158,7 +158,7 @@
       r.fetchedAt = new Date().toISOString(); S.boot = r; save('boot', r);
       if (/^\d{4}-\d{2}-\d{2}$/.test(r.today || '')) { S.clock = { shift: daysBetween(phoneToday(), r.today), at: Date.now() }; save('clock', S.clock); }
       if (S.screen === 'home') render();
-    }, function () { if (!quiet) toast('Tidak ada koneksi internet. Memakai data terakhir.', 'err'); });
+    }, function (e) { if (!quiet) toast((e && e.server ? 'Server sedang gangguan.' : 'Tidak ada koneksi internet.') + ' Memakai data terakhir.', 'err'); });
   }
 
   // ───────────── offline queue (new transactions only) ─────────────
@@ -542,7 +542,7 @@
       delete failedAt[ym];
       S.hist[ym] = { entries: r.entries, total: r.total, at: Date.now() }; save('hist', trimHist());
       redrawList(ym);
-    }, function () { loading[ym] = false; failedAt[ym] = Date.now(); loadFailed(ym, 'Tidak ada koneksi internet.'); });
+    }, function (e) { loading[ym] = false; failedAt[ym] = Date.now(); loadFailed(ym, e && e.server ? 'Server sedang gangguan.' : 'Tidak ada koneksi internet.'); });
   }
   function loadFailed(ym, msg) {
     var c = S.hist[ym];
@@ -664,7 +664,7 @@
           if (!r.ok) { toast(r.error || 'Gagal menghapus.', 'err'); return; }
           toast('Transaksi dihapus ✓', 'ok');
           patchCache(e, null); render(); refresh(true);
-        }, function () { closeSheet(); toast('Tidak ada koneksi internet. Coba lagi nanti.', 'err'); });
+        }, function (err) { closeSheet(); toast(err && err.server ? SERVER_MSG : 'Tidak ada koneksi internet. Coba lagi nanti.', 'err'); });
       });
   }
   function askLeaveForm() {
