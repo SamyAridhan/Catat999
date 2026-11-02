@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "command",
   "commandRunner": {
-    "command": "node tests/app-logic.test.js && node tests/app-render.test.js && node tests/ui-regressions.test.js && TZ=Asia/Jakarta node tests/e2e-real-backend.test.js"
+    "command": "node tests/app-logic.test.js && node tests/app-flows.test.js && node tests/app-render.test.js && TZ=Asia/Jakarta node tests/e2e-real-backend.test.js && node tests/ui-regressions.test.js"
   },
   "mutate": [
     "web/app.js:423-456"

@@ -157,7 +157,7 @@
       if (!r.ok) { if (!quiet) toast(r.error || 'Gagal memuat data', 'err'); return; }
       r.fetchedAt = new Date().toISOString(); S.boot = r; save('boot', r);
       if (/^\d{4}-\d{2}-\d{2}$/.test(r.today || '')) { S.clock = { shift: daysBetween(phoneToday(), r.today), at: Date.now() }; save('clock', S.clock); }
-      if (S.screen === 'home') render();
+      rerenderIf(['home']);   // not under an open dialog (it would lose the button focus returns to)
     }, function (e) { if (!quiet) toast((e && e.server ? 'Server sedang gangguan.' : 'Tidak ada koneksi internet.') + ' Memakai data terakhir.', 'err'); });
   }
 
@@ -811,6 +811,7 @@
     patchCache: patchCache, histList: histList, pendList: pendList, isNet: isNet, trimHist: trimHist,
     render: render, collect: collect, renderSugg: renderSugg, toast: toast, uid: uid, shiftNow: shiftNow, daysBetween: daysBetween,
     phoneToday: phoneToday, isAdmin: isAdmin, editDays: editDays, backDays: backDays, loadMonth: loadMonth, findEntry: findEntry,
-    curMonth: curMonth, outdated: outdated, step: step
+    curMonth: curMonth, outdated: outdated, step: step,
+    api: api, refresh: refresh, flush: flush, endLaterSessions: endLaterSessions, authFail: authFail, SERVER_MSG: SERVER_MSG
   };
 })();
