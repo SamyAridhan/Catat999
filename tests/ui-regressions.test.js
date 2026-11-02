@@ -117,6 +117,25 @@ async function quickEntry(page, amount) {
     await ctx.close();
   }
 
+  // F6: the session ends while a worker is filling the form → after logging in again the form is still filled in
+  {
+    const { ctx, page } = await fresh(browser, srv.url);
+    await loginAs(page, 'Ani');
+    await page.click('[data-act="new"]'); await page.fill('#q', 'rokok'); await page.locator('#q').dispatchEvent('input');
+    await page.locator('#sugg button', { hasText: /^ROKOK$/ }).click();
+    await page.fill('#amt', '43210'); await page.locator('#amt').dispatchEvent('input');
+    await page.locator('#st-from .choice', { hasText: 'Modal' }).click();
+    await page.evaluate(() => localStorage.setItem('c9demo.sessions', '{}'));   // session ended on the server
+    await page.click('[data-act="toReview"]'); await page.click('#saveBtn');
+    await page.waitForSelector('#loginForm');
+    const notice = (await page.locator('.banner.warn').textContent()) || '';
+    await page.fill('#lpw', 'toko12345'); await page.click('#loginBtn');
+    await page.waitForSelector('#amt');
+    const amt = await page.inputValue('#amt');
+    check('F6 half-filled form survives an expired session', /Sesi habis/.test(notice) && amt === '43.210', `notice "${notice.trim()}", amount after login "${amt}"`);
+    await ctx.close();
+  }
+
   await browser.close(); srv.close();
   if (results.includes(false)) process.exit(1);
 })().catch(e => { console.error('ERROR', e.message); process.exit(2); });

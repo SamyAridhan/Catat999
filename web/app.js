@@ -281,7 +281,7 @@
       S.token = r.token; S.user = { name: r.name, role: r.role }; S.notice = '';
       save('token', S.token); save('user', S.user);
       S.names = [r.name].concat(S.names.filter(function (n) { return n !== r.name; })).slice(0, 5); save('names', S.names);
-      go('home', true); toast('Selamat datang, ' + r.name, 'ok');
+      go(S.form ? 'form' : 'home', true); toast('Selamat datang, ' + r.name, 'ok');
       refresh(true).then(flush);
     }, function (e) { unBusy('#loginBtn', 'Masuk'); err.textContent = e && e.server ? SERVER_MSG : 'Tidak ada koneksi internet. Coba lagi.'; });
   }
@@ -293,7 +293,8 @@
     var b = S.boot || {};
     var h = bar('Catat 999');
     if (DEMO) h += '<div class="banner info"><b>Mode coba.</b> Data hanya di HP ini, tidak masuk ke spreadsheet.</div>';
-    if (conflicts) h += '<div class="banner err"><b>' + conflicts + ' transaksi perlu dicek</b> — mungkin tercatat dua kali.<button class="btn small danger" data-act="history">Lihat</button></div>';
+    var refused = S.queue.some(function (o) { return o.state === 'invalid'; });
+    if (conflicts) h += '<div class="banner err"><b>' + conflicts + ' transaksi perlu dicek</b> — ' + (refused ? 'buka Riwayat untuk melihat kenapa.' : 'mungkin tercatat dua kali.') + '<button class="btn small danger" data-act="history">Lihat</button></div>';
     if (shiftNow()) h += '<div class="banner warn"><b>Tanggal di HP ini salah.</b> Aplikasi memakai tanggal yang benar: ' + esc(longDate(today())) + '.</div>';
     if (waiting) h += '<div class="banner warn"><b>' + waiting + ' transaksi belum terkirim.</b> Akan dikirim otomatis saat ada internet.<button class="btn small outline" data-act="flush">Kirim sekarang</button></div>';
     h += '<button class="tile big" data-act="new"><span class="ic plus" aria-hidden="true">+</span><span class="t"><b>Catat Transaksi</b><span>Bayar supplier atau belanja</span></span></button>';
@@ -678,7 +679,7 @@
         closeSheet(); if (!b.getAttribute('data-v')) return;
         if (S.queue.some(function (o) { return o.token === S.token && o.state === 'waiting'; })) { S.logoutLater.push(S.token); save('logoutLater', S.logoutLater); }
         else api('logout').catch(function () { });
-        S.token = ''; S.user = null; drop('token'); drop('user'); S.hist = {}; drop('hist'); S.month = ''; S.query = ''; go('login', true);
+        S.token = ''; S.user = null; drop('token'); drop('user'); S.hist = {}; drop('hist'); S.boot = null; drop('boot'); S.month = ''; S.query = ''; go('login', true);
       });
   }
 
