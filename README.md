@@ -26,7 +26,8 @@ There's no server and nothing to pay for. The web files are static (GitHub Pages
 | **Catat Transaksi** | Nama PT / Barang (search the list; typos still find it) · No. Invoice *(opsional)* · Nominal (with the amount spelled out) · Bayar pakai: Transfer Ibu / Uang Kasir / Modal / Lainnya · Tanggal: **Hari ini** / **Kemarin** / **Pilih tanggal** (big calendar) · Catatan *(opsional)* → **Cek lagi** → **Simpan** |
 | **Riwayat Transaksi** | Month by month (‹ ›), search by supplier or invoice number, daily totals. Tap an entry to see who recorded it and when. |
 | **Ubah / Hapus** | Workers can change or delete an entry up to **3 days after it was recorded**. Ibu can change anything. Deleting needs a reason. Deleted rows are kept, marked `DIHAPUS`, and logged. |
-| **No internet** | New entries wait on the phone ("Belum terkirim") and are sent automatically when the signal returns. |
+| **No internet** | New entries wait on the phone ("Belum terkirim") and are sent automatically when the signal returns. They stay credited to whoever recorded them, even if someone else logs in on that phone. A temporary refusal from the server (busy, too many at once) just retries a minute later; only a likely duplicate asks a person ("Perlu dicek"). |
+| **Wrong phone date** | "Hari ini" follows the server's date. If the phone's date is wrong, the home screen says so. |
 
 Mistakes it prevents:
 - **Supplier spelled 20 different ways.** You pick from the list. A new name that looks like an existing one asks "Maksudnya yang ini?"
@@ -74,15 +75,19 @@ The monthly tab is read-only in practice, because it is rebuilt automatically. E
 
 **Editing by hand (Ibu, on the laptop).** The **Data** tab can be edited normally. It shows a warning first, which is expected.
 - **Fix a cell:** the monthly tab refreshes by itself, and the change is written to **Log** as "Ubah manual".
-- **Add a row:** fill in Tanggal (dd/mm/yyyy), Nama, Nominal and Bayar Pakai. The script fills in ID, Dicatat Oleh = `MANUAL`, Waktu Catat and Status.
+- **Add a row:** fill in Tanggal (dd/mm/yyyy), Nama, Nominal and Bayar Pakai. The script fills in ID, Dicatat Oleh = `MANUAL`, Waktu Catat and Status. A date or amount typed as text ("3/11/26", "Rp 45.500") is turned into a real date or number.
+- **Copy a row:** fine. The copy gets its own new ID, so the app can tell the two apart.
+- **Who changed what:** every hand edit is written to **Log** under the Google account that made it.
 - **Delete a transaction:** prefer typing `DIHAPUS` in **Status**, which keeps a record. Deleting the whole row also works.
 - **If something looks out of date:** use the menu **Catat 999 → Perbarui semua tab**.
+- **Your own tabs are safe.** If a tab you made has a month-style name the app wants (e.g. `NOV 2026`), the app renames yours to `NOV 2026 (lama)` instead of overwriting it.
 
 **Supplier tab:** set **Aktif** to `TIDAK` to hide a name from the app's list.
 
 ## Security
 - **Passwords.** Only salted, iterated SHA-256 hashes are stored, in Script Properties, never in the Sheet or the code.
-  - Five wrong tries from one phone, or 30 in total, lock login for 15 minutes.
+  - Five wrong tries from one phone lock that phone out for 15 minutes.
+  - After 30 wrong tries in total (from anywhere), every login is slowed down. That way a stranger can't lock the whole shop out. A hard stop only kicks in at 300.
   - Every wrong try is slowed down and written to the Log.
 - **Sessions.** Each login gets a random 256-bit token. Only its hash is stored, and it expires after 90 days.
   - Changing a password, or **Catat 999 → Keluarkan semua HP**, logs every phone out.
@@ -103,16 +108,19 @@ The monthly tab is read-only in practice, because it is rebuilt automatically. E
 
 ## Tests
 ```
-npm install                       # dev tools only (Stryker, axe-core); playwright is assumed installed
-npm run test:backend              # Code.gs against an in-memory Sheet
-node tests/app-logic.test.js      # the app's own logic in a real browser (amount in words, search, validation, cache)
-node tests/ui.test.js /tmp/shots  # click-through on a phone (360×740) and a laptop (1366×768)
-node tests/ui-walkthrough.js /tmp/walk   # every screen at 320, 360, 412 px and laptop: overflow, cut-off text,
-                                         # tap-target size, accessibility (axe-core); screenshots for review
-npm run mutate:backend            # mutation testing (Stryker): how many deliberate bugs the tests catch
+npm install                              # dev tools only (Stryker, fast-check, axe-core); playwright is assumed installed
+npm run test:backend                     # Code.gs on an in-memory Sheet: examples, a full golden snapshot, random properties
+node tests/app-logic.test.js             # the app's own logic in a real browser (amount in words, search, validation, cache)
+node tests/ui.test.js /tmp/shots         # click-through on a phone (360×740) and a laptop (1366×768)
+node tests/ui-regressions.test.js        # bugs found by the QA hunt stay fixed
+node tests/ui-keyboard.test.js           # keyboard-only use (Tab / Enter / Escape, dialogs keep focus)
+node tests/ui-walkthrough.js /tmp/walk   # every screen at 320/360/412 px and laptop: overflow, cut-off text,
+                                         # tap targets, accessibility (axe-core); screenshots to review
+node tests/ui-monkey.js 300 6            # "random user": taps, junk typing, back button, internet on/off
+npm run mutate:backend                   # mutation testing (Stryker): how many deliberate bugs the tests catch
 npm run mutate:app
 ```
-Reports land in `reports/mutation/*.html`.
+Reports land in `reports/mutation/*.html`. To approve a deliberate change to the backend's behaviour, run the snapshot test with `UPDATE_SNAPSHOT=1` and review the diff of `tests/snapshots/backend-scenario.json`.
 
 ## Files
 ```

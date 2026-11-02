@@ -24,8 +24,9 @@
   var S = {
     token: load('token', ''), user: load('user', null), boot: load('boot', null), queue: load('queue', []),
     usage: load('usage', {}), names: load('names', []), hist: load('hist', {}),
-    device: load('device', ''), clockShift: load('clockShift', 0), logoutLater: load('logoutLater', []), screen: 'home', form: null, month: '', query: '', busy: false, notice: ''
+    device: load('device', ''), clock: load('clock', null), logoutLater: load('logoutLater', []), screen: 'home', form: null, month: '', query: '', busy: false, notice: ''
   };
+  S.queue.forEach(function (o) { if (!o.token && S.token) { o.token = S.token; o.by = S.user ? S.user.name : ''; } });
   if (!S.device) { S.device = 'HP-' + Math.random().toString(36).slice(2, 8).toUpperCase(); save('device', S.device); }
   function deviceStr() {
     var m = /\(([^)]+)\)/.exec(navigator.userAgent || '');
@@ -45,8 +46,13 @@
     try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
     catch (e) { return ymd(new Date()); }
   }
-  // "Today" follows the server: cheap phones often have the wrong date. clockShift = server date − phone date (days).
-  function today() { var t = phoneToday(); return S.clockShift ? addDays(t, S.clockShift) : t; }
+  // "Today" follows the server: cheap phones often have the wrong date. S.clock.shift = server date − phone date (days).
+  function shiftNow() {
+    var c = S.clock; if (!c || !c.shift) return 0;
+    var age = Date.now() - c.at;
+    return age >= 0 && age < 12 * 3600e3 ? c.shift : 0;   // stale after 12 h: the phone's clock may have been fixed since
+  }
+  function today() { var t = phoneToday(), k = shiftNow(); return k ? addDays(t, k) : t; }
   function daysBetween(a, b) { return Math.round((parse(b) - parse(a)) / 86400000); }
   function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return ymd(d); }
   function addMonths(ym, n) { var d = parse(ym + '-01'); d.setMonth(d.getMonth() + n); return ymd(d).slice(0, 7); }
@@ -145,7 +151,7 @@
       if (authFail(r)) return;
       if (!r.ok) { if (!quiet) toast(r.error || 'Gagal memuat data', 'err'); return; }
       r.fetchedAt = new Date().toISOString(); S.boot = r; save('boot', r);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(r.today || '')) { S.clockShift = daysBetween(phoneToday(), r.today); save('clockShift', S.clockShift); }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(r.today || '')) { S.clock = { shift: daysBetween(phoneToday(), r.today), at: Date.now() }; save('clock', S.clock); }
       if (S.screen === 'home') render();
     }, function () { if (!quiet) toast('Tidak ada koneksi internet. Memakai data terakhir.', 'err'); });
   }
@@ -181,14 +187,14 @@
       else if (r.code === 'INVALID' || /ID transaksi/.test(r.error || '')) next.state = 'invalid';
       else { next.retryAt = Date.now() + 60000; persistQueue(); return; }   // busy / too fast / server hiccup: try again in a minute
       next.error = r.error || 'Gagal';
-      persistQueue(); rerenderIf(['home', 'history']);
+      persistQueue(); endLaterSessions(); rerenderIf(['home', 'history']);
       return flush();
     }, function () { flushing = false; });
   }
   // A worker who logged out while entries were still waiting: end that session on the server once they are sent.
   function endLaterSessions() {
     S.logoutLater = S.logoutLater.filter(function (t) {
-      if (S.queue.some(function (o) { return o.token === t; })) return true;
+      if (S.queue.some(function (o) { return o.token === t && o.state === 'waiting'; })) return true;
       api('logout', { token: t }).catch(function () { });
       return false;
     });
@@ -205,6 +211,15 @@
     var tt = $('#toast'); if (tt) tt.className = 'toast';
     try { history[replace ? 'replaceState' : 'pushState']({ s: screen }, '', location.pathname + location.search); } catch (e) { }
     render(); window.scrollTo(0, 0);
+    focusTitle();
+  }
+  // Screen readers: a new screen announces its title (unless the screen already put the cursor in a field).
+  function focusTitle() {
+    var a = document.activeElement;
+    if (a && a !== document.body && document.body.contains(a) && a.matches('input, textarea')) return;
+    var h = $('.bar h1') || $('.done h2'); if (!h) return;
+    h.setAttribute('tabindex', '-1');
+    try { h.focus({ preventScroll: true }); } catch (e) { }
   }
   window.addEventListener('popstate', function (e) {
     if ($('#ov')) { closeSheet(); try { history.pushState({ s: S.screen }, '', location.pathname + location.search); } catch (x) { } return; }
@@ -274,10 +289,10 @@
     var h = bar('Catat 999');
     if (DEMO) h += '<div class="banner info"><b>Mode coba.</b> Data hanya di HP ini, tidak masuk ke spreadsheet.</div>';
     if (conflicts) h += '<div class="banner err"><b>' + conflicts + ' transaksi perlu dicek</b> — mungkin tercatat dua kali.<button class="btn small danger" data-act="history">Lihat</button></div>';
-    if (S.clockShift) h += '<div class="banner warn"><b>Tanggal di HP ini salah.</b> Aplikasi memakai tanggal yang benar: ' + esc(longDate(today())) + '.</div>';
+    if (shiftNow()) h += '<div class="banner warn"><b>Tanggal di HP ini salah.</b> Aplikasi memakai tanggal yang benar: ' + esc(longDate(today())) + '.</div>';
     if (waiting) h += '<div class="banner warn"><b>' + waiting + ' transaksi belum terkirim.</b> Akan dikirim otomatis saat ada internet.<button class="btn small outline" data-act="flush">Kirim sekarang</button></div>';
-    h += '<button class="tile big" data-act="new"><span class="ic plus">+</span><span class="t"><b>Catat Transaksi</b><span>Bayar supplier atau belanja</span></span></button>';
-    h += '<button class="tile" data-act="history"><span class="ic">📋</span><span class="t"><b>Riwayat Transaksi</b><span>Lihat, ubah, atau hapus</span></span>' +
+    h += '<button class="tile big" data-act="new"><span class="ic plus" aria-hidden="true">+</span><span class="t"><b>Catat Transaksi</b><span>Bayar supplier atau belanja</span></span></button>';
+    h += '<button class="tile" data-act="history"><span class="ic" aria-hidden="true">📋</span><span class="t"><b>Riwayat Transaksi</b><span>Lihat, ubah, atau hapus</span></span>' +
       '<span class="num">' + (b.todayCount || 0) + '<small>hari ini</small></span></button>';
     h += '<div class="foot">' + (b.fetchedAt ? 'Diperbarui ' + esc(hhmm(new Date(new Date(b.fetchedAt).getTime() + 7 * 3600e3).toISOString())) + ' · ' : '') +
       '<button data-act="refresh">Muat ulang</button> · <button data-act="logout">Keluar</button>' +
@@ -329,8 +344,8 @@
     // 5 date
     var y = addDays(t, -1), other = f.date !== t && f.date !== y;
     var dateHtml = '<div class="choices three">' +
-      '<button class="choice' + (f.date === t ? ' on' : '') + '" data-act="date" data-v="' + t + '">Hari ini<small>' + shortDate(t) + '</small></button>' +
-      '<button class="choice' + (f.date === y ? ' on' : '') + '" data-act="date" data-v="' + y + '">Kemarin<small>' + shortDate(y) + '</small></button>' +
+      '<button class="choice' + (f.date === t ? ' on' : '') + '" aria-pressed="' + (f.date === t) + '" data-act="date" data-v="' + t + '">Hari ini<small>' + shortDate(t) + '</small></button>' +
+      '<button class="choice' + (f.date === y ? ' on' : '') + '" aria-pressed="' + (f.date === y) + '" data-act="date" data-v="' + y + '">Kemarin<small>' + shortDate(y) + '</small></button>' +
       '<button class="choice' + (other ? ' on' : '') + '" data-act="cal">' + (other ? shortDate(f.date) + '<small>ganti</small>' : 'Pilih<small>tanggal</small>') + '</button></div>' +
       '<div class="hint strong">' + esc(longDate(f.date)) + '</div>';
     h += step(5, 'st-date', 'Tanggal', false, dateHtml, e.date);
@@ -581,7 +596,8 @@
       for (var i = 0; i < start; i++) cells += '<span></span>';
       for (var d = 1; d <= days; d++) {
         var s = view + '-' + pad(d), off = s > t || s < min;
-        cells += '<button class="day' + (s === f.date ? ' sel' : '') + (s === t ? ' today' : '') + '" data-day="' + s + '"' + (off ? ' disabled' : '') + '>' + d + '</button>';
+        cells += '<button class="day' + (s === f.date ? ' sel' : '') + (s === t ? ' today' : '') + '" data-day="' + s + '" aria-label="' + esc(longDate(s)) + '"' +
+          (s === f.date ? ' aria-pressed="true"' : '') + (s === t ? ' aria-current="date"' : '') + (off ? ' disabled' : '') + '>' + d + '</button>';
       }
       openSheet('<h2>Pilih tanggal</h2><div class="calnav"><button class="btn small outline" data-cal="-1"' + (view <= min.slice(0, 7) ? ' disabled' : '') + ' aria-label="Bulan sebelumnya">‹</button><b>' + esc(monthName(view)) +
         '</b><button class="btn small outline" data-cal="1"' + (view >= t.slice(0, 7) ? ' disabled' : '') + ' aria-label="Bulan berikutnya">›</button></div>' +
@@ -655,7 +671,7 @@
     openSheet('<h2>Keluar dari aplikasi?</h2>' + (n ? '<p>Masih ada <b>' + n + ' transaksi belum terkirim</b>. Transaksi itu tetap tersimpan di HP dan tetap tercatat atas nama yang mencatatnya.</p>' : '<p>Nanti harus masuk lagi dengan kata sandi.</p>') +
       '<div class="stack"><button class="btn danger" data-v="out">Keluar</button><button class="btn outline" data-v="">Batal</button></div>', function (b) {
         closeSheet(); if (!b.getAttribute('data-v')) return;
-        if (S.queue.some(function (o) { return o.token === S.token; })) { S.logoutLater.push(S.token); save('logoutLater', S.logoutLater); }
+        if (S.queue.some(function (o) { return o.token === S.token && o.state === 'waiting'; })) { S.logoutLater.push(S.token); save('logoutLater', S.logoutLater); }
         else api('logout').catch(function () { });
         S.token = ''; S.user = null; drop('token'); drop('user'); S.hist = {}; drop('hist'); S.month = ''; S.query = ''; go('login', true);
       });
@@ -750,7 +766,7 @@
       case 'month': S.month = addMonths(S.month || today().slice(0, 7), Number(v)); failedAt = {}; render(); break;
       case 'detail': detailSheet(v); break;
       case 'reload': failedAt[curMonth()] = 0; t.disabled = true; t.innerHTML = '<span class="spin"></span> Memuat…'; loadMonth(curMonth()); break;
-      case 'qdrop': S.queue = S.queue.filter(function (o) { return o.qid !== v; }); persistQueue(); render(); toast('Transaksi dibuang.'); break;
+      case 'qdrop': S.queue = S.queue.filter(function (o) { return o.qid !== v; }); persistQueue(); endLaterSessions(); render(); toast('Transaksi dibuang.'); break;
       case 'qforce': S.queue.forEach(function (o) { if (o.qid === v) { o.force = true; o.state = 'waiting'; o.retryAt = 0; } }); persistQueue(); render(); flush(); break;
     }
   });

@@ -27,9 +27,10 @@ Catat 999 dipakai **setelah transaksi dibayar**. Ini menggantikan mengetik ke sp
 Kolom yang **wajib** diisi akan berwarna merah dengan tulisan **Wajib diisi** kalau terlewat.
 
 ## Kalau muncul peringatan
-- **"Invoice ini sudah pernah dicatat"** atau **"Sudah ada transaksi yang sama"**: kemungkinan sudah dicatat orang lain. Ketuk **Jangan simpan**. Hanya ketuk **Beda transaksi, tetap simpan** kalau Anda yakin.
+- **"Invoice ini sudah pernah dicatat"** atau **"Sudah ada transaksi yang sama"**: kemungkinan sudah dicatat orang lain. Ketuk **Jangan simpan** (atau **Buang, sudah dicatat** di Riwayat). Hanya ketuk **Beda transaksi, tetap simpan** kalau Anda yakin.
 - **"Nominal besar"**: hitung lagi angka nolnya.
-- **"Belum terkirim"**: tidak ada internet. Tidak apa-apa, transaksi tersimpan di HP dan terkirim sendiri saat ada sinyal. Jangan dicatat dua kali.
+- **"Belum terkirim"**: tidak ada internet. Tidak apa-apa, transaksi tersimpan di HP dan terkirim sendiri saat ada sinyal, tetap atas nama Anda. Jangan dicatat dua kali.
+- **"Tanggal di HP ini salah"**: tanggal di HP tidak benar. Aplikasi tetap memakai tanggal yang benar, tapi sebaiknya perbaiki tanggal di pengaturan HP.
 
 ## Salah catat?
 1. Ketuk **Riwayat Transaksi**, lalu ketuk transaksinya.

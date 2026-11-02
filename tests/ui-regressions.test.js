@@ -78,6 +78,45 @@ async function quickEntry(page, amount) {
     await ctx.close();
   }
 
+  // F4: a date correction learned from the server is only trusted for 12 hours (the phone clock may have been fixed since)
+  {
+    const { ctx, page } = await fresh(browser, srv.url);
+    await loginAs(page, 'Ani');
+    const r = await page.evaluate(() => {
+      const A = window.CatatApp, S = A.state, real = A.today();
+      S.clock = { shift: 1, at: Date.now() - 60e3 }; const fresh = A.today();
+      S.clock = { shift: 1, at: Date.now() - 13 * 3600e3 }; const stale = A.today();
+      S.clock = { shift: 1, at: Date.now() + 3600e3 }; const back = A.today();
+      return { real, fresh, stale, back, plus1: A.addDays(real, 1) };
+    });
+    check('F4 server date shift applied while fresh, ignored when stale or if the clock went back', r.fresh === r.plus1 && r.stale === r.real && r.back === r.real, JSON.stringify(r));
+    await ctx.close();
+  }
+
+  // F5: Ani logs out with an entry still waiting → her session is kept until it is sent; if it turns out to be a
+  //     duplicate (or is thrown away), her session is ended on the server anyway.
+  {
+    const { ctx, page } = await fresh(browser, srv.url);
+    await loginAs(page, 'Ani');
+    const tokA = await page.evaluate(() => window.CatatApp.state.token);
+    await page.evaluate(() => localStorage.setItem('c9demo.offline', '1'));
+    await quickEntry(page, 33333);
+    await page.click('text=Ke Beranda');
+    await page.click('[data-act="logout"]'); await page.locator('#ov button', { hasText: 'Keluar' }).click();
+    const deferred = await page.evaluate(t => window.CatatApp.state.logoutLater.includes(t), tokA);
+    await page.evaluate(() => {
+      localStorage.removeItem('c9demo.offline');
+      const real = window.CatatMockApi.handle;
+      window.CatatMockApi.handle = b => b.action === 'add' ? Promise.resolve({ ok: false, code: 'DUP_SIMILAR', error: 'Sudah ada transaksi yang sama di tanggal itu.' }) : real(b);
+    });
+    await page.waitForSelector('#loginForm'); await loginAs(page, 'Budi');
+    await page.waitForFunction(() => window.CatatApp.state.queue[0] && window.CatatApp.state.queue[0].state === 'conflict', null, { timeout: 8000 });
+    await page.waitForTimeout(500);
+    const after = await page.evaluate(t => ({ later: window.CatatApp.state.logoutLater.length, aliveA: !!JSON.parse(localStorage.getItem('c9demo.sessions'))[t] }), tokA);
+    check('F5 deferred logout is completed once nothing of hers is left to send', deferred && after.later === 0 && !after.aliveA, JSON.stringify({ deferred, after }));
+    await ctx.close();
+  }
+
   await browser.close(); srv.close();
   if (results.includes(false)) process.exit(1);
 })().catch(e => { console.error('ERROR', e.message); process.exit(2); });

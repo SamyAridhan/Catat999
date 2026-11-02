@@ -656,9 +656,13 @@ function onDataEdit(e) {
   var email = '';
   try { email = e.user && e.user.getEmail ? e.user.getEmail() : ''; } catch (err) { }
   var who = { name: email || 'SHEET', device: 'Google Sheets' };
-  // IDs used by OTHER rows: a pasted copy of a row brings its hidden ID along and must get a new one
-  var last = sh.getLastRow(), idCount = {};
-  if (last >= 2) sh.getRange(2, C.ID + 1, last - 1, 1).getValues().forEach(function (x) { if (x[0]) idCount[x[0]] = (idCount[x[0]] || 0) + 1; });
+  // A pasted copy of a row brings its hidden ID along. The rows in THIS edit are the new ones: if their ID also
+  // exists outside the edited range, they are copies and get a new ID (wherever they were pasted, above or below).
+  // If the same ID appears twice inside the edited range only, the first keeps it.
+  var last = sh.getLastRow(), outside = {}, seenInRange = {};
+  if (last >= 2) sh.getRange(2, C.ID + 1, last - 1, 1).getValues().forEach(function (x, k) {
+    var rowNo = k + 2; if (x[0] && (rowNo < r0 || rowNo >= r0 + n)) outside[x[0]] = true;
+  });
   vals.forEach(function (r, i) {
     var empty = !r.slice(0, 7).some(function (c) { return c !== '' && c !== null; });
     if (empty) return;
@@ -669,7 +673,8 @@ function onDataEdit(e) {
     // without its protective apostrophe, so writing it again could turn "'+62…" or "'=…" into a number/formula.
     var put = function (col, v) { sh.getRange(row, col + 1).setValue(typeof v === 'string' ? safeText_(v) : v); };
     if (fixed) { put(C.DATE, r[C.DATE]); put(C.AMT, r[C.AMT]); }
-    var copied = !!r[C.ID] && idCount[r[C.ID]] > 1 && isLaterCopy_(sh, row, r[C.ID]);
+    var copied = !!r[C.ID] && (outside[r[C.ID]] || seenInRange[r[C.ID]]);
+    if (r[C.ID]) seenInRange[r[C.ID]] = true;
     if (!r[C.ID] || copied) {
       r[C.ID] = 'm' + Utilities.getUuid().replace(/-/g, '').slice(0, 15);
       if (copied) { r[C.BY] = 'MANUAL'; r[C.AT] = new Date(); r[C.EDITBY] = ''; r[C.EDITAT] = ''; put(C.EDITBY, ''); put(C.EDITAT, ''); }
@@ -690,13 +695,6 @@ function onDataEdit(e) {
   refreshViews_(Object.keys(months));
 }
 
-/** True when another row ABOVE this one already carries the same ID (so this row is the pasted copy). */
-function isLaterCopy_(sh, row, id) {
-  if (row <= 2) return false;
-  var above = sh.getRange(2, C.ID + 1, row - 2, 1).getValues();
-  for (var i = 0; i < above.length; i++) if (above[i][0] === id) return true;
-  return false;
-}
 
 /** Installable trigger: rows deleted/inserted in Data → rebuild all month tabs. */
 function onDataChange(e) {
@@ -813,7 +811,9 @@ function normalizeTypedRow_(r) {
     var d = parseLooseDate_(r[C.DATE]);
     if (d) { r[C.DATE] = toDate_(d); changed = true; }
   }
-  if (typeof r[C.AMT] === 'string' && /\d/.test(r[C.AMT]) && !/[.,]\d{1,2}$/.test(r[C.AMT].trim())) {
+  // only plain rupiah amounts: "350000", "350.000", "Rp 1.500". Anything else ("50rb", "2 juta", "-5.000", "1,5")
+  // is left as typed, so it stays visibly wrong instead of becoming a believable wrong number.
+  if (typeof r[C.AMT] === 'string' && /^\s*(rp\.?\s*)?(\d+|\d{1,3}([.,]\d{3})+)\s*$/i.test(r[C.AMT])) {
     var a = Number(r[C.AMT].replace(/[^\d]/g, ''));
     if (a > 0) { r[C.AMT] = a; changed = true; }
   }
