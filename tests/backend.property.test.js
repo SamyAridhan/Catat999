@@ -122,6 +122,7 @@ prop('add: accepted rows are always clean (date in range, whole amount in range,
     const r = call({ action: 'add', token: admin ? tokA : tokW, entry: e, force: true });
     assert.strictEqual(typeof r.ok, 'boolean');
     if (!r.ok) { assert.ok(typeof r.error === 'string' && r.error.length > 0); return; }
+    if (r.already) return;   // same id sent again: the server answers with the entry it already has (an idempotent resend)
     const x = r.entry;
     assert.ok(x.date <= today && x.date >= addDays_(today, -(admin ? LIMIT.adminBackDays : LIMIT.workerBackDays)), 'date ' + x.date);
     assert.ok(Number.isInteger(x.amount) && x.amount >= 1 && x.amount <= LIMIT.maxAmount, 'amount ' + x.amount);

@@ -43,40 +43,64 @@
   function rnd() { var a = new Uint8Array(32); (window.crypto || window.msCrypto).getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
   function pub(r, user) {
     return { id: r.id, date: r.date, name: r.name, invoice: r.invoice, amount: r.amount, paidFrom: r.paidFrom, by: r.by, note: r.note, at: r.at,
-      editedBy: r.editedBy, editedAt: r.editedAt, canEdit: user ? canEdit(user, r) : undefined };
+      editedBy: r.editedBy, editedAt: r.editedAt };
   }
   function canEdit(user, r) {
     if (r.status === 'DIHAPUS') return false;
     if (user.role === 'ADMIN') return true;
     return Date.now() - new Date(r.at + '+07:00').getTime() <= LIMIT.editDays * 86400e3;
   }
-  function personName(s) { s = String(s || '').trim().toUpperCase().replace(/\s+/g, ' '); return /^[A-Z][A-Z .'\-]{1,29}$/.test(s) ? s : ''; }
+  // ── same rules and messages as apps-script/Code.gs (kept identical by tests/contract.test.js) ──
+  function text(v) { return typeof v === 'string' ? v : (typeof v === 'number' && isFinite(v) ? String(v) : ''); }
+  function personName(v) { var s = text(v).toUpperCase().replace(/\s+/g, ' ').trim(); return /^[A-Z][A-Z .'\-]{1,29}$/.test(s) ? s : ''; }
+  function cleanName(v) {
+    var s = text(v).toUpperCase().replace(/[^A-Z0-9 .,&\/()'+\-]/g, ' ').replace(/\s+/g, ' ').trim();
+    s = s.replace(/^[=+\-@\s]+/, '').trim();
+    return s.length > 60 ? s.slice(0, 60).trim() : s;
+  }
+  function cleanInvoice(v) { var s = text(v).toUpperCase().replace(/\s+/g, '').trim(); if (!s) return ''; return /^[A-Z0-9\-\/.]{1,30}$/.test(s) ? s : null; }
+  function cleanPay(v) {
+    var s = text(v).trim();
+    for (var i = 0; i < PAY.length; i++) if (s.toUpperCase() === PAY[i].toUpperCase()) return PAY[i];
+    var m = /^lainnya\s*:?\s*(.*)$/i.exec(s);
+    if (m) { var who = m[1].toUpperCase().replace(/[^A-Z .'\-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30); return who ? 'Lainnya: ' + who : ''; }
+    return '';
+  }
+  function cleanFree(v, max) { return text(v).replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max).trim(); }
+  function checkDate(s, back) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return 'Tanggal tidak valid.';
+    var p = s.split('-').map(Number), d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+    if (d.getUTCFullYear() !== p[0] || d.getUTCMonth() !== p[1] - 1 || d.getUTCDate() !== p[2]) return 'Tanggal tidak valid.';
+    var t = today();
+    if (s > t) return 'Tanggal tidak boleh lebih dari hari ini.';
+    if (s < addDays(t, -back)) return 'Tanggal terlalu lama. Minta Ibu untuk mencatat.';
+    return '';
+  }
 
-  function validate(e, user) {
+  function validate(e, user, keepDate) {
     if (!e || typeof e !== 'object') return { error: 'Data tidak valid.' };
-    var t = today(), back = user.role === 'ADMIN' ? LIMIT.adminBackDays : LIMIT.workerBackDays;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date || '')) return { error: 'Tanggal tidak valid.' };
-    if (e.date > t) return { error: 'Tanggal tidak boleh lebih dari hari ini.' };
-    if (e.date < addDays(t, -back)) return { error: 'Tanggal terlalu lama. Minta Ibu untuk mencatat.' };
-    var name = String(e.name || '').toUpperCase().replace(/[^A-Z0-9 .,&()\/'\-]/g, '').replace(/^[=+\-@\s]+/, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    var date = String(e.date || '');
+    var back = keepDate && date === keepDate ? 100000 : (user.role === 'ADMIN' ? LIMIT.adminBackDays : LIMIT.workerBackDays);
+    var dErr = checkDate(date, back); if (dErr) return { error: dErr };
+    var name = cleanName(e.name);
     if (!name) return { error: 'Nama PT / barang wajib diisi.' };
-    var inv = String(e.invoice || '').toUpperCase().replace(/\s+/g, '');
-    if (inv && !/^[A-Z0-9\-\/.]{1,30}$/.test(inv)) return { error: 'No. invoice hanya boleh huruf, angka, - dan / (maks. 30).' };
-    var amt = Number(e.amount);
+    var inv = cleanInvoice(e.invoice);
+    if (inv === null) return { error: 'No. invoice hanya boleh huruf, angka, - dan / (maks. 30).' };
+    var amt = typeof e.amount === 'number' ? e.amount : Number(String(e.amount === undefined ? '' : e.amount).replace(/[^\d]/g, ''));
     if (!isFinite(amt) || Math.floor(amt) !== amt || amt <= 0) return { error: 'Nominal wajib diisi.' };
     if (amt > LIMIT.maxAmount) return { error: 'Nominal terlalu besar. Cek lagi.' };
-    var pf = String(e.paidFrom || ''), m = /^Lainnya: (.+)$/.exec(pf);
-    if (PAY.indexOf(pf) < 0 && !(m && personName(m[1]))) return { error: 'Pilih bayar pakai apa.' };
-    if (m) pf = 'Lainnya: ' + personName(m[1]);
+    var pf = cleanPay(e.paidFrom);
+    if (!pf) return { error: 'Pilih bayar pakai apa.' };
     var canon = suppliers().filter(function (s) { return key(s) === key(name); })[0];
-    return { v: { date: e.date, name: canon || name, invoice: inv, amount: amt, paidFrom: pf, note: String(e.note || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200) } };
+    return { v: { date: date, name: canon || name, invoice: inv, amount: amt, paidFrom: pf, note: cleanFree(e.note, 200) } };
   }
   function dup(d, v, selfId) {
-    for (var i = 0; i < d.length; i++) {
-      var r = d[i]; if (r.status === 'DIHAPUS' || r.id === selfId) continue;
-      if (v.invoice && invKey(r.invoice) && invKey(r.invoice) === invKey(v.invoice) && key(r.name) === key(v.name))
+    var inv = v.invoice.replace(/^0+/, '');
+    for (var i = d.length - 1; i >= 0; i--) {
+      var r = d[i]; if (r.status === 'DIHAPUS' || r.id === selfId || key(r.name) !== key(v.name)) continue;
+      if (inv && String(r.invoice).trim().toUpperCase().replace(/^0+/, '') === inv)
         return { ok: false, code: 'DUP_INVOICE', error: 'Invoice ini sudah pernah dicatat.', existing: pub(r) };
-      if (!v.invoice && r.date === v.date && key(r.name) === key(v.name) && r.amount === v.amount)
+      if (!inv && r.date === v.date && r.amount === v.amount)
         return { ok: false, code: 'DUP_SIMILAR', error: 'Sudah ada transaksi yang sama di tanggal itu.', existing: pub(r) };
     }
     return null;
@@ -97,6 +121,7 @@
     if (a === 'login') {
       var nm = personName(req.name);
       if (!nm) return { ok: false, error: 'Isi nama Anda (huruf saja, 2–30 karakter).' };
+      if (!req.password || String(req.password).length > 100) return { ok: false, error: 'Isi kata sandi.' };
       var role = req.password === PW.admin ? 'ADMIN' : req.password === PW.worker ? 'PEKERJA' : '';
       if (!role) return { ok: false, error: 'Kata sandi salah.' };
       var tok = rnd(), ss = sessions(); ss[tok] = { name: nm, role: role }; put('sessions', ss);
@@ -116,7 +141,7 @@
     }
     if (a === 'list') {
       if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(req.month || '')) return { ok: false, error: 'Bulan tidak valid.' };
-      var out = d.filter(function (r) { return r.status !== 'DIHAPUS' && r.date.slice(0, 7) === req.month; }).map(function (r) { return pub(r, user); });
+      var out = d.filter(function (r) { return r.status !== 'DIHAPUS' && r.date.slice(0, 7) === req.month; }).map(function (r) { var o = pub(r); o.canEdit = canEdit(user, r); return o; });
       out.sort(function (x, y) { return x.date !== y.date ? (x.date < y.date ? 1 : -1) : (x.at < y.at ? 1 : -1); });
       return { ok: true, month: req.month, entries: out, total: out.reduce(function (s, r) { return s + r.amount; }, 0) };
     }
@@ -134,14 +159,15 @@
     }
     if (a === 'update' || a === 'remove') {
       var r = d.filter(function (x) { return x.id === req.id; })[0];
-      if (!r) return { ok: false, error: 'Transaksi tidak ditemukan.' };
+      if (!r) return { ok: false, error: 'Transaksi tidak ditemukan. Mungkin sudah dihapus — muat ulang Riwayat.' };
       if (a === 'remove' && r.status === 'DIHAPUS') return { ok: true, already: true };
+      if (a === 'update' && r.status === 'DIHAPUS') return { ok: false, error: 'Transaksi ini sudah dihapus.' };
       if (!canEdit(user, r)) return { ok: false, error: 'Transaksi lebih dari ' + LIMIT.editDays + ' hari hanya bisa diubah oleh Ibu.' };
       if (a === 'remove') {
-        if (!String(req.reason || '').trim()) return { ok: false, error: 'Pilih alasan hapus.' };
+        if (!cleanFree(req.reason, 100)) return { ok: false, error: 'Pilih alasan hapus.' };
         r.status = 'DIHAPUS'; r.editedBy = user.name; r.editedAt = nowStr(); put('data', d); return { ok: true };
       }
-      var u = validate(req.entry, user); if (u.error) return { ok: false, code: 'INVALID', error: u.error };
+      var u = validate(req.entry, user, r.date); if (u.error) return { ok: false, code: 'INVALID', error: u.error };
       if (!req.force) { var dq = dup(d, u.v, r.id); if (dq) return dq; }
       var changed = ['date', 'name', 'invoice', 'amount', 'paidFrom', 'note'].some(function (k) { return String(r[k]) !== String(u.v[k]); });
       if (!changed) return { ok: true, unchanged: true, entry: pub(r) };

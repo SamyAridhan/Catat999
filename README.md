@@ -110,6 +110,7 @@ The monthly tab is read-only in practice, because it is rebuilt automatically. E
 ```
 npm install                              # dev tools only (Stryker, fast-check, axe-core); playwright is assumed installed
 npm run test:backend                     # Code.gs on an in-memory Sheet: examples, a full golden snapshot, random properties
+node tests/contract.test.js               # demo mode answers exactly like the real backend (so app tests mean something)
 node tests/app-logic.test.js             # the app's own logic in a real browser (amount in words, search, validation, cache)
 node tests/ui.test.js /tmp/shots         # click-through on a phone (360×740) and a laptop (1366×768)
 node tests/ui-regressions.test.js        # bugs found by the QA hunt stay fixed
