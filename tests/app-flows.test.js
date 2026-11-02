@@ -195,11 +195,27 @@ const { serve } = require('./static-server');
     eq(!!document.querySelector('#mark'), true, 'flush: the form being filled in is not redrawn');
     S.form = null; S.screen = 'home'; A.render(); setQueue([]);
 
+    // a sent entry also redraws Riwayat
+    S.screen = 'history'; S.month = today.slice(0, 7); A.render(); await new Promise(r => setTimeout(r, 300));
+    document.querySelector('#app').insertAdjacentHTML('beforeend', '<i id="mark"></i>');
+    reset(); setQueue([item(1)]); replies.add = [{ ok: true }]; await A.flush();
+    eq(!!document.querySelector('#mark'), false, 'flush: Riwayat redrawn after an entry is sent');
+    S.screen = 'home'; A.render();
+
+    // refresh without a login does nothing; an ended session goes back to login without an extra error
+    const tk = S.token; S.token = '';
+    reset(); await A.refresh(); eq(calls.length, 0, 'refresh: not logged in → no request');
+    S.token = tk;
     // ── authFail ──
     eq([A.authFail(null), A.authFail({ ok: false, code: 'INVALID' }), A.authFail({ ok: true })], [false, false, false], 'authFail: only for AUTH');
     reset(); setQueue([item(1, { token: T })]); replies.add = [{ ok: false, code: 'AUTH' }]; await A.flush();
     eq([S.token, S.user, S.screen, S.notice, stored('token'), stored('user')], ['', null, 'login', 'Sesi habis. Silakan masuk lagi.', null, null], 'flush: own session ended → back to login with a message');
     eq(S.queue.length, 1, 'flush: …and the entry is kept');
+    // refresh meeting an ended session: back to login, no "Gagal memuat data" on top
+    S.token = 'TX'; S.user = { name: 'BUDI', role: 'PEKERJA' }; S.screen = 'home'; A.render(); clearToast();
+    reset(); replies.boot = [{ ok: false, code: 'AUTH', error: 'Sesi habis.' }]; await A.refresh();
+    eq([S.screen, S.token, toastText()], ['login', '', ''], 'refresh: ended session → login screen, no extra error');
+    eq(!!document.querySelector('.banner.warn') && /Sesi habis/.test(document.querySelector('.banner.warn').textContent), true, 'login screen says the session ended');
     window.CatatMockApi.handle = real;
     return out;
   }));
@@ -237,6 +253,7 @@ S.queue = [];
     const req = route.request();
     seen = { method: req.method(), type: req.headers()['content-type'], body: JSON.parse(req.postData() || '{}') };
     if (mode === 'abort') return route.abort('internetdisconnected');
+    if (mode === '500json') return route.fulfill({ status: 500, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"ok":true}' });
     if (mode === '500') return route.fulfill({ status: 500, contentType: 'text/html', body: 'error' });
     if (mode === 'html') return route.fulfill({ status: 200, contentType: 'text/html', body: '<html>Sign in</html>' });
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ok: true, echo: 1 }) });
@@ -251,6 +268,7 @@ S.queue = [];
   eq2([seen.method, seen.type, seen.body.action, seen.body.token, seen.body.month, typeof seen.body.device === 'string' && seen.body.device.length > 0],
     ['POST', 'text/plain;charset=utf-8', 'boot', 'TOK123', '2026-11', true], 'api: POST, plain text (no CORS preflight), action + token + device + payload');
   eq2(await run('500'), { err: { network: false, server: true, msg: 'SERVER', isNet: false } }, 'api: error status → "server trouble", not "no internet"');
+  eq2(await run('500json'), { err: { network: false, server: true, msg: 'SERVER', isNet: false } }, 'api: error status is trouble even if the body looks like data');
   eq2(await run('html'), { err: { network: false, server: true, msg: 'SERVER', isNet: false } }, 'api: a web page instead of data → "server trouble"');
   eq2(await run('abort'), { err: { network: true, server: false, msg: 'NETWORK', isNet: true } }, 'api: no connection → "no internet"');
   eq2(await p2.evaluate(() => window.CatatApp.SERVER_MSG), 'Server tidak menjawab dengan benar. Coba lagi nanti; kalau terus begini, kabari Ibu.', 'api: server-trouble wording');
