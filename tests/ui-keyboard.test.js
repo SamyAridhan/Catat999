@@ -1,0 +1,40 @@
+// Keyboard-only use on a laptop (Ibu at night): reach everything with Tab/Enter/Escape, dialogs trap and return focus.
+'use strict';
+const { chromium } = require('playwright');
+const path = require('path');
+const assert = require('assert');
+const { serve } = require('./static-server');
+(async () => {
+  const srv = await serve(path.join(__dirname, '..', 'web'));
+  const browser = await chromium.launch();
+  const page = await (await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'id-ID', timezoneId: 'Asia/Jakarta' })).newPage();
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; console.log('  ✓', m); };
+  const active = () => page.evaluate(() => { const a = document.activeElement; return (a.id ? '#' + a.id : '') + ' ' + (a.textContent || a.getAttribute('aria-label') || '').trim().slice(0, 30); });
+  await page.goto(srv.url + '/index.html?demo=1'); await page.evaluate(() => localStorage.clear()); await page.reload();
+  await page.locator('#lname').focus(); await page.keyboard.type('Ibu'); await page.keyboard.press('Tab'); await page.keyboard.type('ibu12345'); await page.keyboard.press('Enter');
+  await page.waitForSelector('[data-act="new"]');
+  ok(true, 'log in with keyboard only (Tab, Enter)');
+  let found = false;
+  for (let i = 0; i < 6 && !found; i++) { await page.keyboard.press('Tab'); found = (await active()).includes('Catat Transaksi'); }
+  ok(found, 'Tab reaches "Catat Transaksi"');
+  await page.keyboard.press('Enter'); await page.waitForSelector('#q');
+  ok((await active()).startsWith('#q'), 'form opens with the search box focused');
+  ok(await page.evaluate(() => document.querySelector('label[for="q"]') !== null), 'search box has a real label');
+  await page.keyboard.type('yafindo'); await page.waitForTimeout(100);
+  await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  ok((await page.textContent('.picked b')).includes('YAFINDO'), 'pick a supplier with Tab + Enter');
+  await page.locator('[data-act="cal"]').focus(); await page.keyboard.press('Enter'); await page.waitForSelector('#ov');
+  ok(await page.evaluate(() => document.querySelector('#ov').contains(document.activeElement)), 'calendar dialog takes focus');
+  ok(await page.evaluate(() => document.querySelector('#ov [role=dialog]').getAttribute('aria-labelledby') === 'ov-title'), 'dialog is named by its heading');
+  for (let i = 0; i < 50; i++) await page.keyboard.press('Tab');
+  ok(await page.evaluate(() => document.querySelector('#ov').contains(document.activeElement)), 'Tab stays inside the open dialog');
+  await page.keyboard.press('Escape');
+  ok(!(await page.locator('#ov').count()), 'Escape closes the dialog');
+  ok((await active()).includes('Pilih'), 'focus returns to the button that opened it');
+  await page.locator('[data-act="toReview"]').focus(); await page.keyboard.press('Enter');
+  ok(await page.evaluate(() => { const i = document.querySelector('#amt'); return i.getAttribute('aria-invalid') === 'true' && i.getAttribute('aria-describedby') === 'st-amt-e'; }), 'missing amount: field marked invalid and linked to its message');
+  ok(errors.length === 0, 'no JS errors');
+  await browser.close(); srv.close();
+  console.log(`\n${n} keyboard checks passed`);
+})().catch(e => { console.error('FAIL:', e.message); process.exit(1); });

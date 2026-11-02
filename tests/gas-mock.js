@@ -11,7 +11,8 @@ class MockRange {
     const p = new Proxy(this, {
       get(t, k) {
         if (k in t) return t[k];
-        if (typeof k === 'string' && /^set|^clear|^merge|^apply/.test(k)) return () => p;
+        // any other setter is accepted and recorded, so tests can check formatting too
+        if (typeof k === 'string' && /^set|^clear|^merge|^apply/.test(k)) return (...args) => { sheet.calls.push([k, r, c, nr, nc].concat(args)); return p; };
         return undefined;
       }
     });
@@ -30,6 +31,7 @@ class MockRange {
   getValue() { return this.getValues()[0][0]; }
   setValues(v) {
     if (!Array.isArray(v) || v.length !== this.nr) throw new Error(`setValues rows ${v.length} != ${this.nr}`);
+    this.sheet.writes.push([this.r, this.c, this.nr, this.nc]);   // which cells were written (for tests)
     v.forEach((row, i) => {
       if (row.length !== this.nc) throw new Error(`setValues cols ${row.length} != ${this.nc} (row ${i})`);
       const tgt = this.sheet.cells[this.r - 1 + i] || (this.sheet.cells[this.r - 1 + i] = []);
@@ -41,11 +43,12 @@ class MockRange {
     return this;
   }
   setValue(v) { return this.setValues([[v]]); }
-  setNumberFormats(f) { if (f.length !== this.nr || f[0].length !== this.nc) throw new Error('setNumberFormats dims mismatch'); return this; }
-  setFontWeights(f) { if (f.length !== this.nr || f[0].length !== this.nc) throw new Error('setFontWeights dims mismatch'); return this; }
-  setBackgrounds(f) { if (f.length !== this.nr || f[0].length !== this.nc) throw new Error('setBackgrounds dims mismatch'); return this; }
-  setFontColors(f) { if (f.length !== this.nr || f[0].length !== this.nc) throw new Error('setFontColors dims mismatch'); return this; }
-  setNumberFormat() { return this; }
+  _grid(name, f) { if (f.length !== this.nr || f[0].length !== this.nc) throw new Error(name + ' dims mismatch'); this.sheet.calls.push([name, this.r, this.c, this.nr, this.nc, f]); return this; }
+  setNumberFormats(f) { return this._grid('setNumberFormats', f); }
+  setFontWeights(f) { return this._grid('setFontWeights', f); }
+  setBackgrounds(f) { return this._grid('setBackgrounds', f); }
+  setFontColors(f) { return this._grid('setFontColors', f); }
+  setNumberFormat(f) { this.sheet.calls.push(['setNumberFormat', this.r, this.c, this.nr, this.nc, f]); return this; }
   createFilter() { this.sheet.filter = {}; return this.sheet.filter; }
   getSheet() { return this.sheet; }
   getRow() { return this.r; }
@@ -55,8 +58,9 @@ class MockRange {
 }
 
 class MockSheet {
-  constructor(name, maxRows = 1000) { this.name = name; this.cells = []; this.maxRows = maxRows; this.hidden = false; this.frozen = 0; this.protections = []; this.hiddenCols = []; this.filter = null; }
+  constructor(name, maxRows = 1000) { this.name = name; this.cells = []; this.maxRows = maxRows; this.hidden = false; this.frozen = 0; this.protections = []; this.hiddenCols = []; this.filter = null; this.calls = []; this.widths = {}; this.writes = []; }
   getName() { return this.name; }
+  setName(n) { this.name = n; return this; }
   getRange(r, c, nr = 1, nc = 1) { return new MockRange(this, r, c, nr, nc); }
   getLastRow() {
     for (let i = this.cells.length - 1; i >= 0; i--) {
@@ -70,13 +74,13 @@ class MockSheet {
   appendRow(arr) { const r = this.getLastRow() + 1; if (r > this.maxRows) this.maxRows = r; this.cells[r - 1] = arr.slice(); return this; }
   insertRowsAfter(after, n) { this.maxRows += n; return this; }
   deleteRow(r) { this.cells.splice(r - 1, 1); return this; }
-  clear() { this.cells = []; return this; }
+  clear() { this.cells = []; this.calls = []; return this; }
   setFrozenRows(n) { this.frozen = n; }
-  setColumnWidth() { }
+  setColumnWidth(c, w) { this.widths[c] = w; }
   hideColumns(c) { this.hiddenCols.push(c); }
   hideSheet() { this.hidden = true; }
   getFilter() { return this.filter; }
-  protect() { const p = { setDescription() { return p; }, setWarningOnly() { return p; } }; this.protections.push(p); return p; }
+  protect() { const p = { desc: '', warn: false, setDescription(d) { p.desc = d; return p; }, setWarningOnly(w) { p.warn = w; return p; } }; this.protections.push(p); return p; }
   getProtections() { return this.protections; }
   dump() { return this.cells.map(r => (r || []).map(v => v === undefined ? '' : v)); }
 }
@@ -116,12 +120,20 @@ function install(globalObj) {
   const cache = new Map();
   const triggers = [];
   const stats = { sleeps: 0 };
+  // Sheet UI: menus are recorded; prompts answer from ui.answers (queue), alerts are recorded
+  const ui = {
+    menus: [], alerts: [], prompts: [], answers: [],
+    ButtonSet: { OK_CANCEL: 'OK_CANCEL' }, Button: { OK: 'OK', CANCEL: 'CANCEL' },
+    createMenu(title) { const m = { title, items: [], addItem(l, f) { m.items.push([l, f]); return m; }, addSeparator() { m.items.push(['---']); return m; }, addToUi() { ui.menus.push(m); return m; } }; return m; },
+    prompt(title, msg) { ui.prompts.push([title, msg]); const a = ui.answers.shift() || ['CANCEL', '']; return { getSelectedButton: () => a[0], getResponseText: () => a[1] }; },
+    alert(msg) { ui.alerts.push(msg); }
+  };
   Object.assign(globalObj, {
     SpreadsheetApp: {
       getActiveSpreadsheet: () => ss,
       openById: () => ss,
       ProtectionType: { SHEET: 'SHEET', RANGE: 'RANGE' },
-      getUi: () => ({ createMenu: () => { const m = { addItem: () => m, addSeparator: () => m, addToUi: () => m }; return m; } })
+      getUi: () => ui
     },
     ScriptApp: {
       getProjectTriggers: () => triggers.map(h => ({ getHandlerFunction: () => h })),
@@ -144,7 +156,7 @@ function install(globalObj) {
     }
   });
   globalObj.console = console;
-  return { ss, props, cache, triggers, stats };
+  return { ss, props, cache, triggers, stats, ui };
 }
 
 module.exports = { install, MockSheet, formatDate };

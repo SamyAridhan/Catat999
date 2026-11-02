@@ -24,7 +24,7 @@
   var S = {
     token: load('token', ''), user: load('user', null), boot: load('boot', null), queue: load('queue', []),
     usage: load('usage', {}), names: load('names', []), hist: load('hist', {}),
-    device: load('device', ''), screen: 'home', form: null, month: '', query: '', busy: false, notice: ''
+    device: load('device', ''), clockShift: load('clockShift', 0), logoutLater: load('logoutLater', []), screen: 'home', form: null, month: '', query: '', busy: false, notice: ''
   };
   if (!S.device) { S.device = 'HP-' + Math.random().toString(36).slice(2, 8).toUpperCase(); save('device', S.device); }
   function deviceStr() {
@@ -41,10 +41,13 @@
   function pad(n) { return ('0' + n).slice(-2); }
   function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function parse(s) { var p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2] || 1, 12); }
-  function today() {
+  function phoneToday() {
     try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
     catch (e) { return ymd(new Date()); }
   }
+  // "Today" follows the server: cheap phones often have the wrong date. clockShift = server date − phone date (days).
+  function today() { var t = phoneToday(); return S.clockShift ? addDays(t, S.clockShift) : t; }
+  function daysBetween(a, b) { return Math.round((parse(b) - parse(a)) / 86400000); }
   function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return ymd(d); }
   function addMonths(ym, n) { var d = parse(ym + '-01'); d.setMonth(d.getMonth() + n); return ymd(d).slice(0, 7); }
   function longDate(s) { var d = parse(s); return HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BLN[d.getMonth()] + ' ' + d.getFullYear(); }
@@ -142,6 +145,7 @@
       if (authFail(r)) return;
       if (!r.ok) { if (!quiet) toast(r.error || 'Gagal memuat data', 'err'); return; }
       r.fetchedAt = new Date().toISOString(); S.boot = r; save('boot', r);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(r.today || '')) { S.clockShift = daysBetween(phoneToday(), r.today); save('clockShift', S.clockShift); }
       if (S.screen === 'home') render();
     }, function () { if (!quiet) toast('Tidak ada koneksi internet. Memakai data terakhir.', 'err'); });
   }
@@ -150,23 +154,45 @@
   function persistQueue() { save('queue', S.queue); }
   var flushing = false;
   function flush() {
-    if (flushing || !S.token) return Promise.resolve();
-    var next = S.queue.filter(function (o) { return o.state === 'waiting'; })[0];
+    if (flushing) return Promise.resolve();
+    var now = Date.now();
+    var next = S.queue.filter(function (o) { return o.state === 'waiting' && (o.token || S.token) && !(o.retryAt > now); })[0];
     if (!next) return Promise.resolve();
     flushing = true;
-    return api('add', { entry: next.entry, force: !!next.force }).then(function (r) {
+    var tok = next.token || S.token;   // sent as the person who recorded it, even if someone else is logged in now
+    return api('add', { entry: next.entry, force: !!next.force, token: tok }).then(function (r) {
       flushing = false;
-      if (authFail(r)) return;
+      if (r && r.code === 'AUTH') {
+        if (tok === S.token) { authFail(r); return; }
+        // the recorder's session has ended: send with the current login, keeping the recorder's name in the note
+        if (!S.token) return;
+        next.token = S.token;
+        if (next.by && (!S.user || next.by !== S.user.name)) next.entry.note = ((next.entry.note ? next.entry.note + ' · ' : '') + 'dicatat oleh ' + next.by).slice(0, 200);
+        persistQueue(); return flush();
+      }
       if (r.ok) {
         S.queue = S.queue.filter(function (o) { return o.qid !== next.qid; }); persistQueue();
         outdated(next.entry.date.slice(0, 7));
+        endLaterSessions();
         if (!S.queue.length) toast('Transaksi yang tertunda sudah terkirim ✓', 'ok');
         return refresh(true).then(function () { rerenderIf(['home', 'history']); return flush(); });
       }
-      next.state = 'conflict'; next.error = r.error || 'Gagal'; next.existing = r.existing || null;
+      if (r.code === 'DUP_INVOICE' || r.code === 'DUP_SIMILAR') { next.state = 'conflict'; next.existing = r.existing || null; }
+      else if (r.code === 'INVALID' || /ID transaksi/.test(r.error || '')) next.state = 'invalid';
+      else { next.retryAt = Date.now() + 60000; persistQueue(); return; }   // busy / too fast / server hiccup: try again in a minute
+      next.error = r.error || 'Gagal';
       persistQueue(); rerenderIf(['home', 'history']);
       return flush();
     }, function () { flushing = false; });
+  }
+  // A worker who logged out while entries were still waiting: end that session on the server once they are sent.
+  function endLaterSessions() {
+    S.logoutLater = S.logoutLater.filter(function (t) {
+      if (S.queue.some(function (o) { return o.token === t; })) return true;
+      api('logout', { token: t }).catch(function () { });
+      return false;
+    });
+    save('logoutLater', S.logoutLater);
   }
   function rerenderIf(list) { if (list.indexOf(S.screen) >= 0 && !$('#ov')) render(); }
   window.addEventListener('online', function () { flush(); if (S.screen === 'history') { failedAt = {}; loadMonth(S.month || today().slice(0, 7)); } });
@@ -243,11 +269,12 @@
   // ── home ──
   function vHome() {
     var waiting = S.queue.filter(function (o) { return o.state === 'waiting'; }).length;
-    var conflicts = S.queue.filter(function (o) { return o.state === 'conflict'; }).length;
+    var conflicts = S.queue.filter(function (o) { return o.state === 'conflict' || o.state === 'invalid'; }).length;
     var b = S.boot || {};
     var h = bar('Catat 999');
     if (DEMO) h += '<div class="banner info"><b>Mode coba.</b> Data hanya di HP ini, tidak masuk ke spreadsheet.</div>';
     if (conflicts) h += '<div class="banner err"><b>' + conflicts + ' transaksi perlu dicek</b> — mungkin tercatat dua kali.<button class="btn small danger" data-act="history">Lihat</button></div>';
+    if (S.clockShift) h += '<div class="banner warn"><b>Tanggal di HP ini salah.</b> Aplikasi memakai tanggal yang benar: ' + esc(longDate(today())) + '.</div>';
     if (waiting) h += '<div class="banner warn"><b>' + waiting + ' transaksi belum terkirim.</b> Akan dikirim otomatis saat ada internet.<button class="btn small outline" data-act="flush">Kirim sekarang</button></div>';
     h += '<button class="tile big" data-act="new"><span class="ic plus">+</span><span class="t"><b>Catat Transaksi</b><span>Bayar supplier atau belanja</span></span></button>';
     h += '<button class="tile" data-act="history"><span class="ic">📋</span><span class="t"><b>Riwayat Transaksi</b><span>Lihat, ubah, atau hapus</span></span>' +
@@ -273,9 +300,12 @@
     if (f.mode === 'edit') return JSON.stringify(entryFromForm()) !== JSON.stringify(entryFromOrig(f.orig));
     return !!(f.name || f.amount || f.invoice || f.note || f.q);
   }
-  function step(n, id, label, opt, inner, err) {
-    return '<section class="step' + (err ? ' has-err' : '') + '" id="' + id + '"><div class="lbl"><span class="n">' + n + '</span>' + label +
-      (opt ? ' <span class="opt">(opsional)</span>' : '') + '</div>' + inner + (err ? '<div class="err-msg" role="alert">' + esc(err) + '</div>' : '') + '</section>';
+  // forId: the field this label belongs to (a real <label for>); without it the step is a named group of buttons
+  function step(n, id, label, opt, inner, err, forId) {
+    var lab = '<span class="n" aria-hidden="true">' + n + '</span>' + label + (opt ? ' <span class="opt">(opsional)</span>' : '');
+    return '<section class="step' + (err ? ' has-err' : '') + '" id="' + id + '"' + (forId ? '' : ' role="group" aria-labelledby="' + id + '-l"') + '>' +
+      (forId ? '<label class="lbl" id="' + id + '-l" for="' + forId + '">' + lab + '</label>' : '<div class="lbl" id="' + id + '-l">' + lab + '</div>') +
+      inner + (err ? '<div class="err-msg" id="' + id + '-e" role="alert">' + esc(err) + '</div>' : '') + '</section>';
   }
   function vForm() {
     var f = S.form, e = f.errors, t = today();
@@ -285,16 +315,16 @@
     if (f.name) nameHtml = '<div class="picked"><b>' + esc(f.name) + (f.isNew ? ' <span class="new">BARU</span>' : '') + '</b><button class="btn small outline" data-act="unpick">Ganti</button></div>';
     else nameHtml = '<input class="in" id="q" autocomplete="off" autocapitalize="characters" maxlength="60" placeholder="Cari nama PT / barang…" value="' + esc(f.q) + '"><div id="sugg"></div>' +
       (f.q ? '' : '<div class="hint">Sering dipakai:</div><div class="chips" id="freq">' + frequent().map(function (n) { return '<button class="chip" data-act="pick" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>');
-    h += step(1, 'st-name', 'Nama PT / Barang', false, nameHtml, e.name);
+    h += step(1, 'st-name', 'Nama PT / Barang', false, nameHtml, e.name, f.name ? '' : 'q');
     // 2 invoice
     h += step(2, 'st-inv', 'No. Invoice', true, '<input class="in" id="inv" autocomplete="off" autocapitalize="characters" maxlength="30" placeholder="Lihat di kertas invoice" value="' + esc(f.invoice) + '">' +
-      '<div class="hint">Kosongkan kalau tidak ada invoice.</div>', e.invoice);
+      '<div class="hint">Kosongkan kalau tidak ada invoice.</div>', e.invoice, 'inv');
     // 3 amount
     h += step(3, 'st-amt', 'Nominal', false, '<div class="amount-wrap"><span class="rp">Rp</span><input class="in amount" id="amt" inputmode="numeric" autocomplete="off" maxlength="13" placeholder="0" value="' + esc(dots(f.amount)) + '"></div>' +
-      '<div class="words" id="words">' + esc(words(f.amount)) + '</div>', e.amount);
+      '<div class="words" id="words" aria-live="polite">' + esc(words(f.amount)) + '</div>', e.amount, 'amt');
     // 4 paid from
     var pay = '<div class="choices">' + PAY.concat(['Lainnya']).map(function (p) { return '<button class="choice' + (f.paidFrom === p ? ' on' : '') + '" data-act="from" data-v="' + esc(p) + '" aria-pressed="' + (f.paidFrom === p) + '">' + esc(p) + '</button>'; }).join('') + '</div>' +
-      (f.paidFrom === 'Lainnya' ? '<input class="in mt" id="other" autocapitalize="characters" maxlength="30" placeholder="Uang siapa? Contoh: Bujang" value="' + esc(f.other) + '">' : '');
+      (f.paidFrom === 'Lainnya' ? '<input class="in mt" id="other" aria-label="Uang siapa" autocapitalize="characters" maxlength="30" placeholder="Uang siapa? Contoh: Bujang" value="' + esc(f.other) + '">' : '');
     h += step(4, 'st-from', 'Bayar pakai', false, pay, e.paidFrom);
     // 5 date
     var y = addDays(t, -1), other = f.date !== t && f.date !== y;
@@ -305,8 +335,8 @@
       '<div class="hint strong">' + esc(longDate(f.date)) + '</div>';
     h += step(5, 'st-date', 'Tanggal', false, dateHtml, e.date);
     // 6 note
-    h += step(6, 'st-note', 'Catatan', true, '<textarea class="in" id="note" maxlength="200" placeholder="Contoh: retur 2 dus">' + esc(f.note) + '</textarea>');
-    h += '<button class="btn primary" data-act="toReview">Lanjut</button>';
+    h += step(6, 'st-note', 'Catatan', true, '<textarea class="in" id="note" maxlength="200" placeholder="Contoh: retur 2 dus">' + esc(f.note) + '</textarea>', '', 'note');
+    h += '<div class="actionbar"><button class="btn primary" data-act="toReview">Lanjut</button></div>';
     return h;
   }
   function renderSugg() {
@@ -350,7 +380,10 @@
   function vReview() {
     var en = entryFromForm(), f = S.form, o = f.mode === 'edit' ? entryFromOrig(f.orig) : null;
     var ch = function (k) { return o && String(o[k]) !== String(en[k]) ? ' <span class="changed">diubah</span>' : ''; };
-    var h = bar('Cek Lagi', true) + '<div class="hint center">Cek lagi sebelum simpan.</div><div class="card review"><dl>' +
+    // warnings go above the slip: the pinned Simpan button would otherwise hide them below the fold
+    var warn = (en.amount >= BIG ? '<div class="banner err"><b>Nominal besar: ' + rp(en.amount) + '.</b> Pastikan jumlah angka nolnya benar.</div>' : '') +
+      (o && !formDirty() ? '<div class="banner info">Belum ada yang diubah.</div>' : '');
+    var h = bar('Cek Lagi', true) + warn + '<div class="hint center">Samakan dengan kertas invoice / nota.</div><div class="card review"><dl>' +
       '<dt>Nama PT / Barang' + ch('name') + '</dt><dd>' + esc(en.name) + '</dd>' +
       '<dt>No. Invoice' + ch('invoice') + '</dt><dd>' + (en.invoice ? esc(en.invoice) : '<span class="muted">—</span>') + '</dd>' +
       '<dt>Nominal' + ch('amount') + '</dt><dd class="money">' + rp(en.amount) + '<span class="words-sm">' + esc(words(en.amount)) + '</span></dd>' +
@@ -358,9 +391,7 @@
       '<dt>Tanggal' + ch('date') + '</dt><dd>' + esc(longDate(en.date)) + '</dd>' +
       (en.note || (o && o.note) ? '<dt>Catatan' + ch('note') + '</dt><dd class="note">' + (en.note ? esc(en.note) : '<span class="muted">—</span>') + '</dd>' : '') +
       '</dl></div>';
-    if (en.amount >= BIG) h += '<div class="banner err"><b>Nominal besar: ' + rp(en.amount) + '.</b> Pastikan jumlah angka nolnya benar.</div>';
-    if (o && !formDirty()) h += '<div class="banner info">Belum ada yang diubah.</div>';
-    h += '<div class="stack"><button class="btn primary" id="saveBtn" data-act="save"' + (o && !formDirty() ? ' disabled' : '') + '>' + (o ? 'Simpan Perubahan' : 'Simpan') + '</button>' +
+    h += '<div class="actionbar stack"><button class="btn primary" id="saveBtn" data-act="save"' + (o && !formDirty() ? ' disabled' : '') + '>' + (o ? 'Simpan Perubahan' : 'Simpan') + '</button>' +
       '<button class="btn outline" data-act="back">Kembali</button></div>';
     return h;
   }
@@ -382,7 +413,7 @@
     }, function (e) {
       S.busy = false;
       if (f.mode === 'new' && isNet(e)) {
-        S.queue.push({ qid: uid(), state: 'waiting', entry: en, force: !!force }); persistQueue();
+        S.queue.push({ qid: uid(), state: 'waiting', entry: en, force: !!force, token: S.token, by: S.user ? S.user.name : '' }); persistQueue();
         saved(en, true); return;
       }
       unBusy('#saveBtn', f.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan');
@@ -417,26 +448,30 @@
     h += '<div class="monthnav"><button class="btn small outline" data-act="month" data-v="-1" aria-label="Bulan sebelumnya">‹ ' + esc(BLN[parse(addMonths(ym, -1) + '-01').getMonth()]) + '</button>' +
       '<b>' + esc(monthName(ym)) + '</b>' +
       '<button class="btn small outline" data-act="month" data-v="1"' + (ym >= cur ? ' disabled' : '') + ' aria-label="Bulan berikutnya">' + esc(BLN[parse(addMonths(ym, 1) + '-01').getMonth()]) + ' ›</button></div>';
-    h += '<input class="in search" id="hq" type="search" autocomplete="off" placeholder="Cari nama PT / no. invoice" value="' + esc(S.query) + '">';
+    h += '<input class="in search" id="hq" type="search" aria-label="Cari transaksi (nama PT atau no. invoice)" autocomplete="off" placeholder="Cari nama PT / no. invoice" value="' + esc(S.query) + '">';
     return h + '<div id="pend">' + pendList(ym) + '</div><div id="hlist">' + histList(ym, data) + '</div>';
   }
   // Entries still on this phone: conflicts first ("Perlu dicek"), then waiting for internet. Follows the search box.
   function pendList(ym) {
     var h = '';
     var qk = key(S.query);
-    var pend = S.queue.filter(function (o) { return (o.entry.date.slice(0, 7) === ym || o.state === 'conflict') && (!qk || key(o.entry.name).indexOf(qk) >= 0 || key(o.entry.invoice).indexOf(qk) >= 0); })
-      .sort(function (a, b) { return (a.state === 'conflict' ? 0 : 1) - (b.state === 'conflict' ? 0 : 1); });
+    var check = function (o) { return o.state === 'conflict' || o.state === 'invalid'; };
+    var pend = S.queue.filter(function (o) { return (o.entry.date.slice(0, 7) === ym || check(o)) && (!qk || key(o.entry.name).indexOf(qk) >= 0 || key(o.entry.invoice).indexOf(qk) >= 0); })
+      .sort(function (a, b) { return (check(a) ? 0 : 1) - (check(b) ? 0 : 1); });
     if (pend.length) {
       var lastHead = '';
       h += pend.map(function (o) {
-        var head = o.state === 'conflict' ? 'Perlu dicek' : 'Belum terkirim';
-        var hh = head !== lastHead ? '<div class="group-head ' + (o.state === 'conflict' ? 'err' : 'warn') + '">' + head + '</div>' : '';
+        var head = check(o) ? 'Perlu dicek' : 'Belum terkirim';
+        var hh = head !== lastHead ? '<div class="group-head ' + (check(o) ? 'err' : 'warn') + '">' + head + '</div>' : '';
         lastHead = head;
-        return hh + '<div class="item' + (o.state === 'conflict' ? ' conflict' : '') + '"><div class="top"><div class="nm">' + esc(o.entry.name) + '</div><div class="amt">' + rp(o.entry.amount) + '</div></div>' +
-          '<div class="meta">' + esc(o.entry.paidFrom) + ' · ' + esc(shortDate(o.entry.date)) + '</div>' +
-          (o.state === 'conflict' ? '<div class="err-msg">' + esc(o.error) + (o.existing ? ' (sudah dicatat ' + esc(shortDate(o.existing.date)) + ' oleh ' + esc(o.existing.by) + ', ' + rp(o.existing.amount) + ')' : '') + '</div>' +
-            '<div class="acts"><button class="btn small outline" data-act="qdrop" data-v="' + esc(o.qid) + '">Buang (dobel)</button><button class="btn small primary" data-act="qforce" data-v="' + esc(o.qid) + '">Tetap simpan</button></div>'
-            : '<div class="acts"><span class="badge wait">Menunggu internet</span><button class="btn small outline" data-act="qdrop" data-v="' + esc(o.qid) + '">Batalkan</button></div>') + '</div>';
+        var acts;
+        if (o.state === 'conflict') acts = '<div class="err-msg">' + esc(o.error) + (o.existing ? ' (sudah dicatat ' + esc(shortDate(o.existing.date)) + ' oleh ' + esc(o.existing.by) + ', ' + rp(o.existing.amount) + ')' : '') + '</div>' +
+          '<div class="acts"><button class="btn small primary" data-act="qdrop" data-v="' + esc(o.qid) + '">Buang, sudah dicatat</button><button class="btn small outline" data-act="qforce" data-v="' + esc(o.qid) + '">Beda, tetap simpan</button></div>';
+        else if (o.state === 'invalid') acts = '<div class="err-msg">Ditolak server: ' + esc(o.error) + ' Catat ulang dengan benar, lalu buang yang ini.</div>' +
+          '<div class="acts"><button class="btn small outline" data-act="qdrop" data-v="' + esc(o.qid) + '">Buang</button></div>';
+        else acts = '<div class="acts"><span class="badge wait">' + (o.retryAt ? 'Dicoba lagi sebentar' : 'Menunggu internet') + '</span><button class="btn small outline" data-act="qdrop" data-v="' + esc(o.qid) + '">Batalkan</button></div>';
+        return hh + '<div class="item' + (check(o) ? ' conflict' : '') + '"><div class="top"><div class="nm">' + esc(o.entry.name) + '</div><div class="amt">' + rp(o.entry.amount) + '</div></div>' +
+          '<div class="meta">' + esc(o.entry.paidFrom) + ' · ' + esc(shortDate(o.entry.date)) + (o.by ? ' · ' + esc(o.by) : '') + '</div>' + acts + '</div>';
       }).join('');
     }
     return h;
@@ -449,7 +484,7 @@
     var q = key(S.query), list = data.entries.filter(function (e) { return !q || key(e.name).indexOf(q) >= 0 || key(e.invoice).indexOf(q) >= 0 || score(S.query, e.name) >= 0.6; });
     var total = list.reduce(function (s, e) { return s + e.amount; }, 0);
     h += '<div class="card total"><div class="hint">' + (q ? 'Hasil cari · ' : 'Total ' + esc(monthName(ym)) + ' · ') + list.length + ' transaksi</div><div class="big">' + rp(total) + '</div></div>';
-    if (!list.length) return h + '<div class="empty">' + (q ? 'Tidak ada yang cocok.' : 'Belum ada transaksi bulan ini.') + '</div>';
+    if (!list.length) return h + '<div class="empty">' + (q ? 'Tidak ada yang cocok. Coba ketik sebagian nama atau nomor saja.' : 'Belum ada transaksi bulan ini. Ketuk ‹ untuk melihat bulan sebelumnya.') + '</div>';
     var day = null;
     list.forEach(function (e) {
       if (e.date !== day) {
@@ -507,18 +542,35 @@
   function findEntry(id) { var ym = S.month || today().slice(0, 7); return ((S.hist[ym] && S.hist[ym].entries) || []).filter(function (e) { return e.id === id; })[0]; }
 
   // ───────────── bottom sheets ─────────────
+  var sheetReturn = null;
   function openSheet(html, onClick) {
-    closeSheet();
+    if (!$('#ov')) sheetReturn = document.activeElement;
+    closeSheet(true);
     var tt = $('#toast'); if (tt) tt.className = 'toast';
     var o = document.createElement('div'); o.className = 'overlay'; o.id = 'ov';
     o.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>';
     document.body.appendChild(o);
+    var head = o.querySelector('h2, .sheet-title b');
+    if (head) { head.id = 'ov-title'; o.firstChild.setAttribute('aria-labelledby', 'ov-title'); }
+    var first = o.querySelector('button:not([disabled])'); if (first) first.focus({ preventScroll: true });
+    o.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') { closeSheet(); return; }
+      if (ev.key !== 'Tab') return;                       // keep Tab inside the dialog
+      var f = o.querySelectorAll('button:not([disabled]), input, textarea'); if (!f.length) return;
+      var a = f[0], z = f[f.length - 1];
+      if (ev.shiftKey && document.activeElement === a) { z.focus(); ev.preventDefault(); }
+      else if (!ev.shiftKey && document.activeElement === z) { a.focus(); ev.preventDefault(); }
+    });
     o.addEventListener('click', function (ev) {
       if (ev.target === o) { closeSheet(); return; }
       var b = ev.target.closest('button'); if (b && !b.disabled && onClick) onClick(b);
     });
   }
-  function closeSheet() { var o = $('#ov'); if (o) o.remove(); }
+  function closeSheet(keepReturn) {
+    var o = $('#ov'); if (!o) return;
+    o.remove();
+    if (!keepReturn && sheetReturn && document.body.contains(sheetReturn)) { try { sheetReturn.focus({ preventScroll: true }); } catch (e) { } }
+  }
 
   function calendarSheet() {
     var f = S.form, t = today(), min = addDays(t, -backDays());
@@ -531,7 +583,7 @@
         var s = view + '-' + pad(d), off = s > t || s < min;
         cells += '<button class="day' + (s === f.date ? ' sel' : '') + (s === t ? ' today' : '') + '" data-day="' + s + '"' + (off ? ' disabled' : '') + '>' + d + '</button>';
       }
-      openSheet('<h3>Pilih tanggal</h3><div class="calnav"><button class="btn small outline" data-cal="-1"' + (view <= min.slice(0, 7) ? ' disabled' : '') + ' aria-label="Bulan sebelumnya">‹</button><b>' + esc(monthName(view)) +
+      openSheet('<h2>Pilih tanggal</h2><div class="calnav"><button class="btn small outline" data-cal="-1"' + (view <= min.slice(0, 7) ? ' disabled' : '') + ' aria-label="Bulan sebelumnya">‹</button><b>' + esc(monthName(view)) +
         '</b><button class="btn small outline" data-cal="1"' + (view >= t.slice(0, 7) ? ' disabled' : '') + ' aria-label="Bulan berikutnya">›</button></div>' +
         '<div class="cal">' + HR.map(function (x) { return '<span class="wd">' + x + '</span>'; }).join('') + cells + '</div>' +
         '<button class="btn outline" data-close="1">Batal</button>', function (b) {
@@ -544,7 +596,7 @@
   }
   function dupSheet(r, onForce) {
     var x = r.existing || {};
-    openSheet('<h3>⚠️ ' + esc(r.error) + '</h3><div class="card"><b>' + esc(x.name) + '</b><div class="meta">' + (x.invoice ? 'Inv ' + esc(x.invoice) + ' · ' : '') + rp(x.amount) + ' · ' + esc(x.paidFrom || '') + '</div>' +
+    openSheet('<h2>⚠️ ' + esc(r.error) + '</h2><div class="card"><b>' + esc(x.name) + '</b><div class="meta">' + (x.invoice ? 'Inv ' + esc(x.invoice) + ' · ' : '') + rp(x.amount) + ' · ' + esc(x.paidFrom || '') + '</div>' +
       '<div class="meta">Dicatat ' + esc(shortDate(x.date || today())) + ' oleh ' + esc(x.by) + '</div></div>' +
       '<p>Kalau ini transaksi yang sama, <b>jangan disimpan lagi</b>.</p><div class="stack"><button class="btn primary" data-v="cancel">Jangan simpan</button>' +
       '<button class="btn outline" data-v="force">Beda transaksi, tetap simpan</button></div>', function (b) {
@@ -554,7 +606,7 @@
       });
   }
   function similarSheet(q, list) {
-    openSheet('<h3>Maksudnya yang ini?</h3><p>Nama ini mirip dengan yang sudah ada. Pilih yang sama supaya catatan rapi.</p><div class="stack">' +
+    openSheet('<h2>Maksudnya yang ini?</h2><p>Nama ini mirip dengan yang sudah ada. Pilih yang sama supaya catatan rapi.</p><div class="stack">' +
       list.map(function (n) { return '<button class="btn outline" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') +
       '<button class="btn ghost" data-v="">Bukan, pakai nama baru "' + esc(q) + '"</button></div>', function (b) {
         var n = b.getAttribute('data-v'); closeSheet();
@@ -577,7 +629,7 @@
       });
   }
   function deleteSheet(e) {
-    openSheet('<h3>Hapus transaksi ini?</h3><div class="card"><b>' + esc(e.name) + '</b><div class="meta">' + rp(e.amount) + ' · ' + esc(shortDate(e.date)) + '</div></div><p>Kenapa dihapus?</p>' +
+    openSheet('<h2>Hapus transaksi ini?</h2><div class="card"><b>' + esc(e.name) + '</b><div class="meta">' + rp(e.amount) + ' · ' + esc(shortDate(e.date)) + '</div></div><p>Kenapa dihapus?</p>' +
       '<div class="stack"><button class="btn outline" data-v="Salah input">Salah input</button><button class="btn outline" data-v="Tercatat dua kali">Tercatat dua kali</button>' +
       '<button class="btn outline" data-v="Lainnya">Lainnya</button><button class="btn ghost" data-v="">Batal</button></div>', function (b) {
         var reason = b.getAttribute('data-v'); if (!reason) { closeSheet(); return; }
@@ -592,7 +644,7 @@
       });
   }
   function askLeaveForm() {
-    openSheet('<h3>Batalkan catatan ini?</h3><p>Isian yang sudah diketik akan hilang.</p><div class="stack"><button class="btn danger" data-v="leave">Ya, batalkan</button>' +
+    openSheet('<h2>Batalkan catatan ini?</h2><p>Isian yang sudah diketik akan hilang.</p><div class="stack"><button class="btn danger" data-v="leave">Ya, batalkan</button>' +
       '<button class="btn outline" data-v="stay">Lanjut isi</button></div>', function (b) {
         closeSheet();
         if (b.getAttribute('data-v') === 'leave') { var wasEdit = S.form && S.form.mode === 'edit'; S.form = null; go(wasEdit ? 'history' : 'home', true); }
@@ -600,10 +652,11 @@
   }
   function logoutSheet() {
     var n = S.queue.length;
-    openSheet('<h3>Keluar dari aplikasi?</h3>' + (n ? '<p>Masih ada <b>' + n + ' transaksi belum terkirim</b>. Transaksi itu tetap tersimpan di HP dan akan terkirim setelah masuk lagi.</p>' : '<p>Nanti harus masuk lagi dengan kata sandi.</p>') +
+    openSheet('<h2>Keluar dari aplikasi?</h2>' + (n ? '<p>Masih ada <b>' + n + ' transaksi belum terkirim</b>. Transaksi itu tetap tersimpan di HP dan tetap tercatat atas nama yang mencatatnya.</p>' : '<p>Nanti harus masuk lagi dengan kata sandi.</p>') +
       '<div class="stack"><button class="btn danger" data-v="out">Keluar</button><button class="btn outline" data-v="">Batal</button></div>', function (b) {
         closeSheet(); if (!b.getAttribute('data-v')) return;
-        api('logout').catch(function () { });
+        if (S.queue.some(function (o) { return o.token === S.token; })) { S.logoutLater.push(S.token); save('logoutLater', S.logoutLater); }
+        else api('logout').catch(function () { });
         S.token = ''; S.user = null; drop('token'); drop('user'); S.hist = {}; drop('hist'); S.month = ''; S.query = ''; go('login', true);
       });
   }
@@ -621,6 +674,11 @@
 
   // ───────────── events ─────────────
   function after() {
+    var bad = document.querySelectorAll('.step.has-err');
+    for (var bi = 0; bi < bad.length; bi++) {
+      var fld = bad[bi].querySelector('input, textarea');
+      if (fld) { fld.setAttribute('aria-invalid', 'true'); fld.setAttribute('aria-describedby', bad[bi].id + '-e'); }
+    }
     var lf = $('#loginForm');
     if (lf) lf.addEventListener('submit', function (ev) { ev.preventDefault(); doLogin(); });
     var q = $('#q');
@@ -652,6 +710,18 @@
     if (S.screen === 'history' && needLoad(curMonth())) loadMonth(curMonth());
   }
 
+  // While typing, the pinned Lanjut/Simpan bar steps aside so it never covers the field (phone keyboard is up).
+  document.addEventListener('focusin', function (ev) { if (ev.target.matches && ev.target.matches('input, textarea')) document.body.classList.add('typing'); });
+  // Bring the bar back only after the tap that moved focus has finished, so nothing shifts under the finger.
+  var typingTimer;
+  document.addEventListener('focusout', function () {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(function () {
+      var a = document.activeElement;
+      if (!(a && a.matches && a.matches('input, textarea'))) document.body.classList.remove('typing');
+    }, 450);
+  });
+
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('[data-act]'); if (!t || t.disabled || $('#ov')) return;
     var act = t.getAttribute('data-act'), v = t.getAttribute('data-v');
@@ -664,7 +734,7 @@
       case 'new': S.form = newForm(); S.form._focus = true; go('form'); break;
       case 'history': if (v !== 'keep' || !S.month) { S.month = today().slice(0, 7); S.query = ''; } failedAt = {}; go('history'); break;
       case 'refresh': toast('Memuat ulang…'); refresh().then(flush); break;
-      case 'flush': toast('Mengirim…'); flush(); break;
+      case 'flush': S.queue.forEach(function (o) { o.retryAt = 0; }); toast('Mengirim…'); flush(); break;
       case 'logout': logoutSheet(); break;
       case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; render(); } break;
       case 'pick': S.form.name = v; S.form.isNew = false; S.form.q = ''; S.form.errors.name = ''; render(); break;
@@ -680,8 +750,8 @@
       case 'month': S.month = addMonths(S.month || today().slice(0, 7), Number(v)); failedAt = {}; render(); break;
       case 'detail': detailSheet(v); break;
       case 'reload': failedAt[curMonth()] = 0; t.disabled = true; t.innerHTML = '<span class="spin"></span> Memuat…'; loadMonth(curMonth()); break;
-      case 'qdrop': S.queue = S.queue.filter(function (o) { return o.qid !== v; }); persistQueue(); render(); toast('Dibatalkan.'); break;
-      case 'qforce': S.queue.forEach(function (o) { if (o.qid === v) { o.force = true; o.state = 'waiting'; } }); persistQueue(); render(); flush(); break;
+      case 'qdrop': S.queue = S.queue.filter(function (o) { return o.qid !== v; }); persistQueue(); render(); toast('Transaksi dibuang.'); break;
+      case 'qforce': S.queue.forEach(function (o) { if (o.qid === v) { o.force = true; o.state = 'waiting'; o.retryAt = 0; } }); persistQueue(); render(); flush(); break;
     }
   });
 

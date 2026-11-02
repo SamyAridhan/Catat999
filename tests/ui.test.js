@@ -254,8 +254,8 @@ const initMutant = ACTIVE_MUTANT ? `globalThis.__stryker__ = globalThis.__stryke
   await page.locator('#hlist .item.tap', { hasText: 'ROKOK' }).filter({ hasText: '150.000' }).click();
   await page.waitForSelector(sheet);
   await tap('Hapus', sheet);
-  await page.waitForSelector(`${sheet} h3`);
-  ok((await text(`${sheet} h3`)).includes('Hapus transaksi ini?'), 'delete: asks to confirm with a reason');
+  await page.waitForSelector(`${sheet} h2`);
+  ok((await text(`${sheet} h2`)).includes('Hapus transaksi ini?'), 'delete: asks to confirm with a reason');
   await shot('delete', page, false);
   await tap('Tercatat dua kali', sheet);
   await page.waitForFunction(() => !document.querySelector('#ov'));

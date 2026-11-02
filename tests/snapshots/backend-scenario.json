@@ -1,0 +1,7766 @@
+[
+ [
+  "doGet",
+  {
+   "ok": true,
+   "app": "Catat 999"
+  }
+ ],
+ [
+  "setup",
+  "OK"
+ ],
+ [
+  "setup again (idempotent)",
+  "OK"
+ ],
+ [
+  "menu",
+  [
+   {
+    "title": "Catat 999",
+    "items": [
+     [
+      "Perbarui semua tab",
+      "refreshAll"
+     ],
+     [
+      "---"
+     ],
+     [
+      "Atur kata sandi pekerja",
+      "menuWorkerPassword"
+     ],
+     [
+      "Atur kata sandi admin (Ibu)",
+      "menuAdminPassword"
+     ],
+     [
+      "Keluarkan semua HP",
+      "menuLogoutAll"
+     ],
+     [
+      "---"
+     ],
+     [
+      "Siapkan / perbaiki struktur",
+      "setup"
+     ]
+    ]
+   }
+  ]
+ ],
+ [
+  "login before passwords set",
+  {
+   "ok": false,
+   "error": "Aplikasi belum siap: kata sandi belum diatur di spreadsheet."
+  }
+ ],
+ [
+  "password 7 chars",
+  {
+   "threw": "Kata sandi minimal 8 karakter."
+  }
+ ],
+ [
+  "password leading space",
+  {
+   "threw": "Kata sandi tidak boleh diawali/diakhiri spasi."
+  }
+ ],
+ [
+  "password trailing space",
+  {
+   "threw": "Kata sandi tidak boleh diawali/diakhiri spasi."
+  }
+ ],
+ [
+  "password 8 chars ok",
+  {
+   "returned": "OK"
+  }
+ ],
+ [
+  "admin same as worker",
+  {
+   "threw": "Kata sandi admin dan pekerja harus berbeda."
+  }
+ ],
+ [
+  "ui prompts + alerts",
+  {
+   "prompts": [
+    [
+     "Kata sandi pekerja (dipakai semua pekerja)",
+     "Minimal 8 karakter. Semua HP akan keluar dan harus masuk lagi."
+    ],
+    [
+     "Kata sandi admin (hanya untuk Ibu)",
+     "Minimal 8 karakter. Semua HP akan keluar dan harus masuk lagi."
+    ],
+    [
+     "Kata sandi admin (hanya untuk Ibu)",
+     "Minimal 8 karakter. Semua HP akan keluar dan harus masuk lagi."
+    ],
+    [
+     "Kata sandi admin (hanya untuk Ibu)",
+     "Minimal 8 karakter. Semua HP akan keluar dan harus masuk lagi."
+    ]
+   ],
+   "alerts": [
+    "Kata sandi disimpan. Semua HP harus masuk lagi.",
+    "Kata sandi minimal 8 karakter.",
+    "Kata sandi disimpan. Semua HP harus masuk lagi."
+   ]
+  }
+ ],
+ [
+  "stored properties",
+  {
+   "PW_ADMIN": "261aea9494cf0d49459064a76fe53c71d2d8e08a3468b2c9783d0e9f20ca5e89",
+   "PW_SALT": "00000000000000000000000000000001",
+   "PW_WORKER": "86b8ba1462912f9e82522f2883d5231deebf28aadcbb2d657e4b4427b8cde454",
+   "SES_EPOCH": "3",
+   "SS_ID": "SS123"
+  }
+ ],
+ [
+  "login: 1-letter name",
+  {
+   "ok": false,
+   "error": "Isi nama Anda (huruf saja, 2–30 karakter)."
+  }
+ ],
+ [
+  "login: digits in name",
+  {
+   "ok": false,
+   "error": "Isi nama Anda (huruf saja, 2–30 karakter)."
+  }
+ ],
+ [
+  "login: 31-letter name refused",
+  {
+   "ok": false,
+   "error": "Isi nama Anda (huruf saja, 2–30 karakter)."
+  }
+ ],
+ [
+  "login: 30-letter name ok",
+  {
+   "ok": true,
+   "token": "0000000000000000000000000000000200000000000000000000000000000003",
+   "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "role": "PEKERJA"
+  }
+ ],
+ [
+  "login: empty password",
+  {
+   "ok": false,
+   "error": "Isi kata sandi."
+  }
+ ],
+ [
+  "login: 101-char password",
+  {
+   "ok": false,
+   "error": "Isi kata sandi."
+  }
+ ],
+ [
+  "login: wrong password #1",
+  {
+   "ok": false,
+   "error": "Kata sandi salah."
+  }
+ ],
+ [
+  "login: wrong password #2",
+  {
+   "ok": false,
+   "error": "Kata sandi salah."
+  }
+ ],
+ [
+  "login: wrong password #3",
+  {
+   "ok": false,
+   "error": "Kata sandi salah."
+  }
+ ],
+ [
+  "login: wrong password #4",
+  {
+   "ok": false,
+   "error": "Kata sandi salah."
+  }
+ ],
+ [
+  "login: wrong password #5",
+  {
+   "ok": false,
+   "error": "Kata sandi salah."
+  }
+ ],
+ [
+  "login: wrong password #6",
+  {
+   "ok": false,
+   "error": "Terlalu banyak percobaan. Coba lagi 15 menit lagi."
+  }
+ ],
+ [
+  "sleeps after wrong passwords",
+  5
+ ],
+ [
+  "login: right password but device locked",
+  {
+   "ok": false,
+   "error": "Terlalu banyak percobaan. Coba lagi 15 menit lagi."
+  }
+ ],
+ [
+  "login: worker",
+  {
+   "ok": true,
+   "token": "0000000000000000000000000000000400000000000000000000000000000005",
+   "name": "ANI PUTRI",
+   "role": "PEKERJA"
+  }
+ ],
+ [
+  "login: admin",
+  {
+   "ok": true,
+   "token": "0000000000000000000000000000000600000000000000000000000000000007",
+   "name": "IBU",
+   "role": "ADMIN"
+  }
+ ],
+ [
+  "login: after 30 failures from strangers a real worker still gets in",
+  {
+   "ok": true,
+   "token": "0000000000000000000000000000000800000000000000000000000000000009",
+   "name": "ANI",
+   "role": "PEKERJA"
+  }
+ ],
+ [
+  "…but slowed down (extra sleeps)",
+  1
+ ],
+ [
+  "login: hard stop at 300 failures",
+  {
+   "ok": false,
+   "error": "Terlalu banyak percobaan. Coba lagi 15 menit lagi."
+  }
+ ],
+ [
+  "doPost: malformed JSON",
+  {
+   "ok": false,
+   "error": "Permintaan tidak valid."
+  }
+ ],
+ [
+  "doPost: array",
+  {
+   "ok": false,
+   "error": "Permintaan tidak valid."
+  }
+ ],
+ [
+  "doPost: null",
+  {
+   "ok": false,
+   "error": "Permintaan tidak valid."
+  }
+ ],
+ [
+  "doPost: empty body",
+  {
+   "ok": false,
+   "error": "Aksi tidak dikenal."
+  }
+ ],
+ [
+  "doPost: exactly max size",
+  {
+   "ok": true
+  }
+ ],
+ [
+  "doPost: one over max size",
+  {
+   "ok": false,
+   "error": "Permintaan terlalu besar."
+  }
+ ],
+ [
+  "unknown action",
+  {
+   "ok": false,
+   "error": "Aksi tidak dikenal."
+  }
+ ],
+ [
+  "missing token",
+  {
+   "ok": false,
+   "code": "AUTH",
+   "error": "Sesi habis. Silakan masuk lagi."
+  }
+ ],
+ [
+  "forged token",
+  {
+   "ok": false,
+   "code": "AUTH",
+   "error": "Sesi habis. Silakan masuk lagi."
+  }
+ ],
+ [
+  "token wrong shape",
+  {
+   "ok": false,
+   "code": "AUTH",
+   "error": "Sesi habis. Silakan masuk lagi."
+  }
+ ],
+ [
+  "boot: worker",
+  {
+   "ok": true,
+   "user": {
+    "name": "ANI PUTRI",
+    "role": "PEKERJA"
+   },
+   "today": "2026-11-02",
+   "payFrom": [
+    "Transfer Ibu",
+    "Uang Kasir",
+    "Modal"
+   ],
+   "suppliers": [
+    "PT. YAFINDO MITRA PERMATA",
+    "PT. SAMPURNA SUKSES ABADI",
+    "PT. OMEGA SUKSES ABADI",
+    "PT. MULTIBOGA ARYA SENTOSA",
+    "PT. CITRA MANDIRI DISTRIBUSINDO",
+    "PT. EKAPUTRA DINATA UTAMA",
+    "CV. SUMBER CIPTA AGUNG",
+    "PT. CITRA UTAMA DISTRIBUSINDO RAYA",
+    "PT. SERAYA MAKMUR PERDANA",
+    "PT. STARTMARA PRATAMA",
+    "PT. COLAMAS SUKSES MANDIRI",
+    "PT. SELATANINDO BATAM MANDIRI",
+    "PT. LIM SIANG HUAT",
+    "PT. MITRA SARIMAS PRATAMA",
+    "PT. SUKSES JAYA INDAH",
+    "PT. KIAN JAYA MAKMUR SEMESTA",
+    "PT. GRAPHIKA DUTA MANDIRI",
+    "PT. MITRA ABADI KIAT PERKASA",
+    "CV. FIVE BROTHERS",
+    "PT. GRAND SEMESTA MANDIRI",
+    "PT. SINAR SUKSES INDONESIA",
+    "PT. SRIJAYA RAYA PERKASA",
+    "PT. SUMBER SARI",
+    "PT. PAN BARUNA",
+    "PT. BINTAN SUKSES MANDIRI",
+    "PT. ROYAL SINAR PERKASA",
+    "PT. ALAM JAYA WIRASENTOSA",
+    "UD. SANJAYA MITRA ABADI",
+    "PT. ALVA KARYA ABADI",
+    "PT. ESHAM DIMA MANDIRI",
+    "PT. DILINDO BERKAH SEJAHTERA",
+    "PT. CIPTA NIAGA SEMESTA",
+    "PT. KARYA SUKSES PERMATA",
+    "PT. BINTANG LIMA IMADA",
+    "PT. INDO WARNA PERKASA",
+    "PT. HANSEL DUTA NIAGA PRATAMA",
+    "PT. ASIA PARAMITA INDAH",
+    "PT. BENTORO ADISANDI IVENA",
+    "PT. MITRA AMBAR JAYA USAHA",
+    "PT. SINAR MENTARI KOBEL",
+    "PT. YAFINDO SUMBER REZEKI",
+    "PT. BESTINDO PERSADA",
+    "PT. PRISMA REKSA SEJAHTERA BERSAMA",
+    "PT. INDOSARI NIAGA NUSANTARA",
+    "PT. ARTHA JAYA SEMESTA",
+    "PT. SURYA LESTARI GEMILANG",
+    "PT. WAHANA TIRTA MILENIA",
+    "PT. BINTANG LESTARI SEJAHTERA",
+    "PT. GONUSA PRIMA DISTRIBUSI",
+    "PT. JOHN & CO",
+    "PT. DWI BINTANG ABADI",
+    "PT. KAYRINDO BATAM",
+    "PT. BINTANG SENTRAL IMADA",
+    "CV. INDORA JAYA",
+    "PT. INARAYA SUKSES PRATAMA",
+    "PT. MARGA NUSANTARA JAYA",
+    "PT. TRIPILAR SUKSES SENTOSA",
+    "PT. RINTIS SEJAHTERA MAKMUR",
+    "PT. CIPTA MAKMUR MAXINDO",
+    "PT. ANUGERAH PERKASA SEJAHTERA",
+    "PT. INDOGABEN SUKSES PERKASA",
+    "PT. TRIKARSA RAYA MANDIRI",
+    "PT. DJI GO LAK INDONESIA",
+    "PT. SINBAT",
+    "PT. BERKAT ANATASIA",
+    "PT. MUJUR INDO PRATAMA",
+    "PT. COCA COLA DISTRIBUTION INDONESIA",
+    "PT. INDO MULTI WARNA",
+    "PT. PRIMA NIAGA GEMILANG",
+    "PT. PBP",
+    "PT. TEMPO",
+    "PT. MULTIBOGA PERSADA RAYA",
+    "PT. PROSPERITAS NUSATAMA JAYA",
+    "PT. PARAMA GLOBAL INSPIRA",
+    "PT. DWI NIAGA INDONESIA",
+    "PT. BINTAN KARYA SUKSES SEJATI",
+    "PT. M.M.P",
+    "PT. CAHAYA GEMILANG PRAKASA",
+    "PT. HALDEN PASIFIK MAKMUR",
+    "PT. KARYA ALAM CEMERLANG",
+    "PT. SUKSES KARYA DISTRIBUSINDO",
+    "PT. SURYA MADISTRINDO",
+    "PT. TRI SAKTI PURWOSARI MAKMUR",
+    "PT. PACIFIC BATAM PERKASA",
+    "PT. PENTA VALENT TBK",
+    "PT. BALLYSON LESTARI SUKSES",
+    "PT. ROTI BATAM SEJAHTERA",
+    "PT. TIGA BENUA",
+    "PT. TOP BAKER INDONESIA",
+    "PT. BINTANG SARIMAS BATAM",
+    "M9 / LIYANTO",
+    "SALES DIMAS",
+    "SALES DAVVI DWIASA",
+    "SALES FELIXIO",
+    "ROKOK",
+    "GOGO SUPERMARKET",
+    "DELIMA INDAH",
+    "TOP UP SALDO FASTPAY",
+    "TOP UP ADAKU",
+    "ROTI DAILYS",
+    "SARI ROTI",
+    "ROTI HADAYA",
+    "ROTI MEKAR",
+    "ROTI 1717",
+    "YAKULT",
+    "KERUPUK AZZA",
+    "F. THREE SNACK / SUNARTI",
+    "KUE BAWANG",
+    "BOLU KERING",
+    "AIR GALON SANFORD",
+    "SANFORD BOTOL",
+    "AIR GALON BIASA",
+    "AQUA BOTOL",
+    "TEH BOTOL SOSRO",
+    "GAS PORTABEL",
+    "KANTONG ASOY",
+    "PLASTIK SAMPAH",
+    "KERTAS THERMAL",
+    "GELAS KOPI / PAPER CUP",
+    "R.A PARFUM",
+    "VINCENT ACCESSORIES",
+    "TANGKI AIR BERSIH",
+    "UANG SAMPAH"
+   ],
+   "frequent": [],
+   "todayCount": 0,
+   "limits": {
+    "maxAmount": 500000000,
+    "backDays": 60,
+    "editDays": 3
+   }
+  }
+ ],
+ [
+  "boot: admin limits",
+  {
+   "ok": true,
+   "user": {
+    "name": "IBU",
+    "role": "ADMIN"
+   },
+   "today": "2026-11-02",
+   "payFrom": [
+    "Transfer Ibu",
+    "Uang Kasir",
+    "Modal"
+   ],
+   "suppliers": [
+    "PT. YAFINDO MITRA PERMATA",
+    "PT. SAMPURNA SUKSES ABADI",
+    "PT. OMEGA SUKSES ABADI",
+    "PT. MULTIBOGA ARYA SENTOSA",
+    "PT. CITRA MANDIRI DISTRIBUSINDO",
+    "PT. EKAPUTRA DINATA UTAMA",
+    "CV. SUMBER CIPTA AGUNG",
+    "PT. CITRA UTAMA DISTRIBUSINDO RAYA",
+    "PT. SERAYA MAKMUR PERDANA",
+    "PT. STARTMARA PRATAMA",
+    "PT. COLAMAS SUKSES MANDIRI",
+    "PT. SELATANINDO BATAM MANDIRI",
+    "PT. LIM SIANG HUAT",
+    "PT. MITRA SARIMAS PRATAMA",
+    "PT. SUKSES JAYA INDAH",
+    "PT. KIAN JAYA MAKMUR SEMESTA",
+    "PT. GRAPHIKA DUTA MANDIRI",
+    "PT. MITRA ABADI KIAT PERKASA",
+    "CV. FIVE BROTHERS",
+    "PT. GRAND SEMESTA MANDIRI",
+    "PT. SINAR SUKSES INDONESIA",
+    "PT. SRIJAYA RAYA PERKASA",
+    "PT. SUMBER SARI",
+    "PT. PAN BARUNA",
+    "PT. BINTAN SUKSES MANDIRI",
+    "PT. ROYAL SINAR PERKASA",
+    "PT. ALAM JAYA WIRASENTOSA",
+    "UD. SANJAYA MITRA ABADI",
+    "PT. ALVA KARYA ABADI",
+    "PT. ESHAM DIMA MANDIRI",
+    "PT. DILINDO BERKAH SEJAHTERA",
+    "PT. CIPTA NIAGA SEMESTA",
+    "PT. KARYA SUKSES PERMATA",
+    "PT. BINTANG LIMA IMADA",
+    "PT. INDO WARNA PERKASA",
+    "PT. HANSEL DUTA NIAGA PRATAMA",
+    "PT. ASIA PARAMITA INDAH",
+    "PT. BENTORO ADISANDI IVENA",
+    "PT. MITRA AMBAR JAYA USAHA",
+    "PT. SINAR MENTARI KOBEL",
+    "PT. YAFINDO SUMBER REZEKI",
+    "PT. BESTINDO PERSADA",
+    "PT. PRISMA REKSA SEJAHTERA BERSAMA",
+    "PT. INDOSARI NIAGA NUSANTARA",
+    "PT. ARTHA JAYA SEMESTA",
+    "PT. SURYA LESTARI GEMILANG",
+    "PT. WAHANA TIRTA MILENIA",
+    "PT. BINTANG LESTARI SEJAHTERA",
+    "PT. GONUSA PRIMA DISTRIBUSI",
+    "PT. JOHN & CO",
+    "PT. DWI BINTANG ABADI",
+    "PT. KAYRINDO BATAM",
+    "PT. BINTANG SENTRAL IMADA",
+    "CV. INDORA JAYA",
+    "PT. INARAYA SUKSES PRATAMA",
+    "PT. MARGA NUSANTARA JAYA",
+    "PT. TRIPILAR SUKSES SENTOSA",
+    "PT. RINTIS SEJAHTERA MAKMUR",
+    "PT. CIPTA MAKMUR MAXINDO",
+    "PT. ANUGERAH PERKASA SEJAHTERA",
+    "PT. INDOGABEN SUKSES PERKASA",
+    "PT. TRIKARSA RAYA MANDIRI",
+    "PT. DJI GO LAK INDONESIA",
+    "PT. SINBAT",
+    "PT. BERKAT ANATASIA",
+    "PT. MUJUR INDO PRATAMA",
+    "PT. COCA COLA DISTRIBUTION INDONESIA",
+    "PT. INDO MULTI WARNA",
+    "PT. PRIMA NIAGA GEMILANG",
+    "PT. PBP",
+    "PT. TEMPO",
+    "PT. MULTIBOGA PERSADA RAYA",
+    "PT. PROSPERITAS NUSATAMA JAYA",
+    "PT. PARAMA GLOBAL INSPIRA",
+    "PT. DWI NIAGA INDONESIA",
+    "PT. BINTAN KARYA SUKSES SEJATI",
+    "PT. M.M.P",
+    "PT. CAHAYA GEMILANG PRAKASA",
+    "PT. HALDEN PASIFIK MAKMUR",
+    "PT. KARYA ALAM CEMERLANG",
+    "PT. SUKSES KARYA DISTRIBUSINDO",
+    "PT. SURYA MADISTRINDO",
+    "PT. TRI SAKTI PURWOSARI MAKMUR",
+    "PT. PACIFIC BATAM PERKASA",
+    "PT. PENTA VALENT TBK",
+    "PT. BALLYSON LESTARI SUKSES",
+    "PT. ROTI BATAM SEJAHTERA",
+    "PT. TIGA BENUA",
+    "PT. TOP BAKER INDONESIA",
+    "PT. BINTANG SARIMAS BATAM",
+    "M9 / LIYANTO",
+    "SALES DIMAS",
+    "SALES DAVVI DWIASA",
+    "SALES FELIXIO",
+    "ROKOK",
+    "GOGO SUPERMARKET",
+    "DELIMA INDAH",
+    "TOP UP SALDO FASTPAY",
+    "TOP UP ADAKU",
+    "ROTI DAILYS",
+    "SARI ROTI",
+    "ROTI HADAYA",
+    "ROTI MEKAR",
+    "ROTI 1717",
+    "YAKULT",
+    "KERUPUK AZZA",
+    "F. THREE SNACK / SUNARTI",
+    "KUE BAWANG",
+    "BOLU KERING",
+    "AIR GALON SANFORD",
+    "SANFORD BOTOL",
+    "AIR GALON BIASA",
+    "AQUA BOTOL",
+    "TEH BOTOL SOSRO",
+    "GAS PORTABEL",
+    "KANTONG ASOY",
+    "PLASTIK SAMPAH",
+    "KERTAS THERMAL",
+    "GELAS KOPI / PAPER CUP",
+    "R.A PARFUM",
+    "VINCENT ACCESSORIES",
+    "TANGKI AIR BERSIH",
+    "UANG SAMPAH"
+   ],
+   "frequent": [],
+   "todayCount": 0,
+   "limits": {
+    "maxAmount": 500000000,
+    "backDays": 400,
+    "editDays": 3
+   }
+  }
+ ],
+ [
+  "add: transfer with invoice",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addtransferwithinvoice",
+    "date": "2026-11-02",
+    "name": "PT. YAFINDO MITRA PERMATA",
+    "invoice": "0012345",
+    "amount": 1776424,
+    "paidFrom": "Transfer Ibu",
+    "by": "ANI PUTRI",
+    "note": "retur 2 dus",
+    "at": "2026-11-02T10:00:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "add: cash, no invoice",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addcashnoinvoice",
+    "date": "2026-11-02",
+    "name": "ROKOK",
+    "invoice": "",
+    "amount": 350000,
+    "paidFrom": "Uang Kasir",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:05:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "add: Lainnya + new supplier",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addLainnyanewsupplier",
+    "date": "2026-11-01",
+    "name": "TOKO KUE MAMA LINA",
+    "invoice": "",
+    "amount": 125000,
+    "paidFrom": "Lainnya: BUJANG",
+    "by": "ANI PUTRI",
+    "note": "=HYPERLINK(\"http://x\")",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "add: modal, previous month",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addmodalpreviousmonth",
+    "date": "2026-10-28",
+    "name": "CV. SUMBER CIPTA AGUNG",
+    "invoice": "INV/2210",
+    "amount": 2450000,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "add: same id again (offline resend)",
+  {
+   "ok": true,
+   "already": true,
+   "entry": {
+    "id": "id-addcashnoinvoice",
+    "date": "2026-11-02",
+    "name": "ROKOK",
+    "invoice": "",
+    "amount": 350000,
+    "paidFrom": "Uang Kasir",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:05:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "dup: same invoice, leading zeros",
+  {
+   "ok": false,
+   "code": "DUP_INVOICE",
+   "error": "Invoice ini sudah pernah dicatat.",
+   "existing": {
+    "id": "id-addtransferwithinvoice",
+    "date": "2026-11-02",
+    "name": "PT. YAFINDO MITRA PERMATA",
+    "invoice": "0012345",
+    "amount": 1776424,
+    "paidFrom": "Transfer Ibu",
+    "by": "ANI PUTRI",
+    "note": "retur 2 dus",
+    "at": "2026-11-02T10:00:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "dup: same invoice other supplier is fine",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-dupsameinvoiceothersupplierisf",
+    "date": "2026-11-02",
+    "name": "PT. OMEGA SUKSES ABADI",
+    "invoice": "0012345",
+    "amount": 1000,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "dup: same name+date+amount, no invoice",
+  {
+   "ok": false,
+   "code": "DUP_SIMILAR",
+   "error": "Sudah ada transaksi yang sama di tanggal itu.",
+   "existing": {
+    "id": "id-addcashnoinvoice",
+    "date": "2026-11-02",
+    "name": "ROKOK",
+    "invoice": "",
+    "amount": 350000,
+    "paidFrom": "Uang Kasir",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:05:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "dup: same name+amount, other date is fine",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-dupsamenameamountotherdateisfi",
+    "date": "2026-11-01",
+    "name": "ROKOK",
+    "invoice": "",
+    "amount": 350000,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "dup: forced",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-dupforced",
+    "date": "2026-11-02",
+    "name": "ROKOK",
+    "invoice": "",
+    "amount": 350000,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "bad: no name",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nama PT / barang wajib diisi."
+  }
+ ],
+ [
+  "bad: name only symbols",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nama PT / barang wajib diisi."
+  }
+ ],
+ [
+  "bad: invoice chars",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "No. invoice hanya boleh huruf, angka, - dan / (maks. 30)."
+  }
+ ],
+ [
+  "bad: invoice 31 chars",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "No. invoice hanya boleh huruf, angka, - dan / (maks. 30)."
+  }
+ ],
+ [
+  "ok: invoice 30 chars",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-okinvoice30chars",
+    "date": "2026-11-02",
+    "name": "X",
+    "invoice": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "amount": 2,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "bad: amount 0",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nominal wajib diisi."
+  }
+ ],
+ [
+  "bad: amount negative",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nominal wajib diisi."
+  }
+ ],
+ [
+  "bad: amount decimal",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nominal wajib diisi."
+  }
+ ],
+ [
+  "bad: amount text",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nominal wajib diisi."
+  }
+ ],
+ [
+  "ok: amount \"Rp 1.500\"",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-okamountRp1500",
+    "date": "2026-11-02",
+    "name": "X",
+    "invoice": "",
+    "amount": 1500,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "ok: amount at max",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-okamountatmax",
+    "date": "2026-11-02",
+    "name": "X",
+    "invoice": "",
+    "amount": 500000000,
+    "paidFrom": "Modal",
+    "by": "IBU",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "bad: amount over max",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nominal terlalu besar. Cek lagi."
+  }
+ ],
+ [
+  "bad: no pay source",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Pilih bayar pakai apa."
+  }
+ ],
+ [
+  "bad: unknown pay source",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Pilih bayar pakai apa."
+  }
+ ],
+ [
+  "bad: Lainnya without name",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Pilih bayar pakai apa."
+  }
+ ],
+ [
+  "bad: date tomorrow",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Tanggal tidak boleh lebih dari hari ini."
+  }
+ ],
+ [
+  "bad: date not a date",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Tanggal tidak valid."
+  }
+ ],
+ [
+  "bad: date impossible",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Tanggal tidak valid."
+  }
+ ],
+ [
+  "ok: worker 60 days back",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-okworker60daysback",
+    "date": "2026-09-03",
+    "name": "X",
+    "invoice": "",
+    "amount": 4,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "bad: worker 61 days back",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Tanggal terlalu lama. Minta Ibu untuk mencatat."
+  }
+ ],
+ [
+  "ok: admin 400 days back",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-okadmin400daysback",
+    "date": "2025-09-28",
+    "name": "X",
+    "invoice": "",
+    "amount": 5,
+    "paidFrom": "Modal",
+    "by": "IBU",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "bad: admin 401 days back",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Tanggal terlalu lama. Minta Ibu untuk mencatat."
+  }
+ ],
+ [
+  "bad: id too short",
+  {
+   "ok": false,
+   "error": "ID transaksi tidak valid."
+  }
+ ],
+ [
+  "bad: id odd chars",
+  {
+   "ok": false,
+   "error": "ID transaksi tidak valid."
+  }
+ ],
+ [
+  "ok: long note trimmed to 200",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-oklongnotetrimmedto200",
+    "date": "2026-11-02",
+    "name": "X",
+    "invoice": "",
+    "amount": 7,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "rate limit: 20 ok then refused",
+  [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   false
+  ]
+ ],
+ [
+  "rate limit message",
+  {
+   "ok": false,
+   "error": "Terlalu cepat. Tunggu sebentar lalu coba lagi."
+  }
+ ],
+ [
+  "list: Nov (worker)",
+  {
+   "ok": true,
+   "month": "2026-11",
+   "entries": [
+    {
+     "id": "rate000019",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1019,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000018",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1018,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000017",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1017,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000016",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1016,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000015",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1015,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000014",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1014,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000013",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1013,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000012",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1012,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000011",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1011,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000010",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1010,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000009",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1009,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000008",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1008,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000007",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1007,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000006",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1006,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000005",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1005,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000004",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1004,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000003",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1003,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000002",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1002,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000001",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1001,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "rate000000",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-oklongnotetrimmedto200",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "",
+     "amount": 7,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-okamountatmax",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "",
+     "amount": 500000000,
+     "paidFrom": "Modal",
+     "by": "IBU",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-okamountRp1500",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "",
+     "amount": 1500,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-okinvoice30chars",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+     "amount": 2,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-dupforced",
+     "date": "2026-11-02",
+     "name": "ROKOK",
+     "invoice": "",
+     "amount": 350000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-dupsameinvoiceothersupplierisf",
+     "date": "2026-11-02",
+     "name": "PT. OMEGA SUKSES ABADI",
+     "invoice": "0012345",
+     "amount": 1000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-addcashnoinvoice",
+     "date": "2026-11-02",
+     "name": "ROKOK",
+     "invoice": "",
+     "amount": 350000,
+     "paidFrom": "Uang Kasir",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:05:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-addtransferwithinvoice",
+     "date": "2026-11-02",
+     "name": "PT. YAFINDO MITRA PERMATA",
+     "invoice": "0012345",
+     "amount": 1776424,
+     "paidFrom": "Transfer Ibu",
+     "by": "ANI PUTRI",
+     "note": "retur 2 dus",
+     "at": "2026-11-02T10:00:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-dupsamenameamountotherdateisfi",
+     "date": "2026-11-01",
+     "name": "ROKOK",
+     "invoice": "",
+     "amount": 350000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    },
+    {
+     "id": "id-addLainnyanewsupplier",
+     "date": "2026-11-01",
+     "name": "TOKO KUE MAMA LINA",
+     "invoice": "",
+     "amount": 125000,
+     "paidFrom": "Lainnya: BUJANG",
+     "by": "ANI PUTRI",
+     "note": "=HYPERLINK(\"http://x\")",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    }
+   ],
+   "total": 502974123
+  }
+ ],
+ [
+  "list: Oct (worker)",
+  {
+   "ok": true,
+   "month": "2026-10",
+   "entries": [
+    {
+     "id": "id-addmodalpreviousmonth",
+     "date": "2026-10-28",
+     "name": "CV. SUMBER CIPTA AGUNG",
+     "invoice": "INV/2210",
+     "amount": 2450000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    }
+   ],
+   "total": 2450000
+  }
+ ],
+ [
+  "list: bad month",
+  {
+   "ok": false,
+   "error": "Bulan tidak valid."
+  }
+ ],
+ [
+  "update: nothing changed",
+  {
+   "ok": true,
+   "unchanged": true,
+   "entry": {
+    "id": "id-addtransferwithinvoice",
+    "date": "2026-11-02",
+    "name": "PT. YAFINDO MITRA PERMATA",
+    "invoice": "0012345",
+    "amount": 1776424,
+    "paidFrom": "Transfer Ibu",
+    "by": "ANI PUTRI",
+    "note": "retur 2 dus",
+    "at": "2026-11-02T10:00:00",
+    "editedBy": "ANI PUTRI",
+    "editedAt": "2026-11-02T10:10:00"
+   }
+  }
+ ],
+ [
+  "update: amount",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addtransferwithinvoice",
+    "date": "2026-11-02",
+    "name": "PT. YAFINDO MITRA PERMATA",
+    "invoice": "0012345",
+    "amount": 1767424,
+    "paidFrom": "Transfer Ibu",
+    "by": "ANI PUTRI",
+    "note": "retur 2 dus",
+    "at": "2026-11-02T10:00:00",
+    "editedBy": "ANI PUTRI",
+    "editedAt": "2026-11-02T11:10:00"
+   }
+  }
+ ],
+ [
+  "update: every field + move to Oct",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addtransferwithinvoice",
+    "date": "2026-10-30",
+    "name": "PT. OMEGA SUKSES ABADI",
+    "invoice": "A-1",
+    "amount": 1000000,
+    "paidFrom": "Lainnya: MUDA",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:00:00",
+    "editedBy": "ANI PUTRI",
+    "editedAt": "2026-11-02T11:10:00"
+   }
+  }
+ ],
+ [
+  "update: into a duplicate invoice",
+  {
+   "ok": false,
+   "code": "DUP_INVOICE",
+   "error": "Invoice ini sudah pernah dicatat.",
+   "existing": {
+    "id": "id-addmodalpreviousmonth",
+    "date": "2026-10-28",
+    "name": "CV. SUMBER CIPTA AGUNG",
+    "invoice": "INV/2210",
+    "amount": 2450000,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "",
+    "editedAt": ""
+   }
+  }
+ ],
+ [
+  "update: into a duplicate, forced",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addtransferwithinvoice",
+    "date": "2026-10-29",
+    "name": "CV. SUMBER CIPTA AGUNG",
+    "invoice": "INV/2210",
+    "amount": 1,
+    "paidFrom": "Modal",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:00:00",
+    "editedBy": "ANI PUTRI",
+    "editedAt": "2026-11-02T11:10:00"
+   }
+  }
+ ],
+ [
+  "update: invalid",
+  {
+   "ok": false,
+   "code": "INVALID",
+   "error": "Nominal wajib diisi."
+  }
+ ],
+ [
+  "update: unknown id",
+  {
+   "ok": false,
+   "error": "Transaksi tidak ditemukan. Mungkin sudah dihapus — muat ulang Riwayat."
+  }
+ ],
+ [
+  "remove: no reason",
+  {
+   "ok": false,
+   "error": "Pilih alasan hapus."
+  }
+ ],
+ [
+  "remove: ok",
+  {
+   "ok": true
+  }
+ ],
+ [
+  "remove: again",
+  {
+   "ok": true,
+   "already": true
+  }
+ ],
+ [
+  "remove: unknown",
+  {
+   "ok": false,
+   "error": "Transaksi tidak ditemukan. Mungkin sudah dihapus — muat ulang Riwayat."
+  }
+ ],
+ [
+  "3 days minus a minute: worker may edit",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addLainnyanewsupplier",
+    "date": "2026-11-01",
+    "name": "TOKO KUE MAMA LINA",
+    "invoice": "",
+    "amount": 125001,
+    "paidFrom": "Lainnya: BUJANG",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "ANI PUTRI",
+    "editedAt": "2026-11-05T10:09:00"
+   }
+  }
+ ],
+ [
+  "3 days plus a minute: worker blocked",
+  {
+   "ok": false,
+   "error": "Transaksi lebih dari 3 hari hanya bisa diubah oleh Ibu."
+  }
+ ],
+ [
+  "3 days plus a minute: worker cannot delete",
+  {
+   "ok": false,
+   "error": "Transaksi lebih dari 3 hari hanya bisa diubah oleh Ibu."
+  }
+ ],
+ [
+  "admin may still edit (and delete)",
+  {
+   "ok": true,
+   "entry": {
+    "id": "id-addLainnyanewsupplier",
+    "date": "2026-11-01",
+    "name": "TOKO KUE MAMA LINA",
+    "invoice": "",
+    "amount": 125003,
+    "paidFrom": "Lainnya: BUJANG",
+    "by": "ANI PUTRI",
+    "note": "",
+    "at": "2026-11-02T10:10:00",
+    "editedBy": "IBU",
+    "editedAt": "2026-11-05T10:11:00"
+   }
+  }
+ ],
+ [
+  "admin deletes it",
+  {
+   "ok": true
+  }
+ ],
+ [
+  "editing a deleted entry",
+  {
+   "ok": false,
+   "error": "Transaksi ini sudah dihapus."
+  }
+ ],
+ [
+  "list: Nov (worker) after changes",
+  {
+   "ok": true,
+   "month": "2026-11",
+   "entries": [
+    {
+     "id": "rate000019",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1019,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000018",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1018,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000017",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1017,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000016",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1016,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000015",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1015,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000014",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1014,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000013",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1013,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000012",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1012,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000011",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1011,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000010",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1010,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000009",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1009,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000008",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1008,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000007",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1007,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000006",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1006,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000005",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1005,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000004",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1004,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000003",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1003,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000002",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1002,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000001",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1001,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "rate000000",
+     "date": "2026-11-02",
+     "name": "GALON",
+     "invoice": "",
+     "amount": 1000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "id-oklongnotetrimmedto200",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "",
+     "amount": 7,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "id-okamountatmax",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "",
+     "amount": 500000000,
+     "paidFrom": "Modal",
+     "by": "IBU",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "id-okamountRp1500",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "",
+     "amount": 1500,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "id-okinvoice30chars",
+     "date": "2026-11-02",
+     "name": "X",
+     "invoice": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+     "amount": 2,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "id-dupforced",
+     "date": "2026-11-02",
+     "name": "ROKOK",
+     "invoice": "",
+     "amount": 350000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "id-dupsameinvoiceothersupplierisf",
+     "date": "2026-11-02",
+     "name": "PT. OMEGA SUKSES ABADI",
+     "invoice": "0012345",
+     "amount": 1000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    },
+    {
+     "id": "id-dupsamenameamountotherdateisfi",
+     "date": "2026-11-01",
+     "name": "ROKOK",
+     "invoice": "",
+     "amount": 350000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": false
+    }
+   ],
+   "total": 500722699
+  }
+ ],
+ [
+  "list: Oct (admin)",
+  {
+   "ok": true,
+   "month": "2026-10",
+   "entries": [
+    {
+     "id": "id-addtransferwithinvoice",
+     "date": "2026-10-29",
+     "name": "CV. SUMBER CIPTA AGUNG",
+     "invoice": "INV/2210",
+     "amount": 1,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:00:00",
+     "editedBy": "ANI PUTRI",
+     "editedAt": "2026-11-02T11:10:00",
+     "canEdit": true
+    },
+    {
+     "id": "id-addmodalpreviousmonth",
+     "date": "2026-10-28",
+     "name": "CV. SUMBER CIPTA AGUNG",
+     "invoice": "INV/2210",
+     "amount": 2450000,
+     "paidFrom": "Modal",
+     "by": "ANI PUTRI",
+     "note": "",
+     "at": "2026-11-02T10:10:00",
+     "editedBy": "",
+     "editedAt": "",
+     "canEdit": true
+    }
+   ],
+   "total": 2450001
+  }
+ ],
+ [
+  "typed text date/amount normalised",
+  [
+   "2026-11-03T05:00:00.000Z",
+   "X",
+   "",
+   45500
+  ]
+ ],
+ [
+  "parseLooseDate_ table",
+  {
+   "returned": [
+    "2026-11-02",
+    "2026-11-02",
+    "2026-11-02",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+   ]
+  }
+ ],
+ [
+  "logout",
+  {
+   "ok": true
+  }
+ ],
+ [
+  "after logout",
+  {
+   "ok": false,
+   "code": "AUTH",
+   "error": "Sesi habis. Silakan masuk lagi."
+  }
+ ],
+ [
+  "after 91 days unused",
+  {
+   "ok": false,
+   "code": "AUTH",
+   "error": "Sesi habis. Silakan masuk lagi."
+  }
+ ],
+ [
+  "after \"Keluarkan semua HP\"",
+  {
+   "ok": false,
+   "code": "AUTH",
+   "error": "Sesi habis. Silakan masuk lagi."
+  }
+ ],
+ [
+  "admin also logged out",
+  {
+   "ok": false,
+   "code": "AUTH",
+   "error": "Sesi habis. Silakan masuk lagi."
+  }
+ ],
+ [
+  "alerts at end",
+  [
+   "Kata sandi disimpan. Semua HP harus masuk lagi.",
+   "Kata sandi minimal 8 karakter.",
+   "Kata sandi disimpan. Semua HP harus masuk lagi.",
+   "Semua HP sudah dikeluarkan. Pekerja harus masuk lagi."
+  ]
+ ],
+ [
+  "sheet order",
+  [
+   "NOV 2026",
+   "OKT 2026",
+   "SEP 2026",
+   "SEP 2025",
+   "Data",
+   "Supplier",
+   "Log",
+   "Sesi"
+  ]
+ ],
+ [
+  "sheet NOV 2026",
+  {
+   "hidden": false,
+   "frozen": 5,
+   "hiddenCols": [],
+   "widths": {
+    "1": 100,
+    "2": 260,
+    "3": 100,
+    "4": 115,
+    "5": 120,
+    "6": 110,
+    "7": 200
+   },
+   "filter": false,
+   "protections": [],
+   "values": [
+    [
+     "999 MART — NOVEMBER 2026",
+     "",
+     "",
+     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Total",
+     "Transfer Ibu",
+     "Uang Kasir",
+     "Modal",
+     "Lainnya",
+     "Transaksi",
+     ""
+    ],
+    [
+     503246697,
+     0,
+     30000,
+     503216697,
+     0,
+     28,
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Tanggal",
+     "Nama PT / Barang",
+     "No. Invoice",
+     "Nominal",
+     "Bayar Pakai",
+     "Dicatat Oleh",
+     "Catatan"
+    ],
+    [
+     "2026-11-01T05:00:00.000Z",
+     "CV. SUMBER CIPTA AGUNG",
+     "INV/2210",
+     2450000,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-01T05:00:00.000Z",
+     "ROKOK",
+     "",
+     350000,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-01T05:00:00.000Z",
+     "GALON SANFORD",
+     "",
+     30000,
+     "Uang Kasir",
+     "MANUAL",
+     "diketik manual"
+    ],
+    [
+     "",
+     "Total 01/11",
+     "",
+     2830000,
+     "",
+     "",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "PT. OMEGA SUKSES ABADI",
+     "0012345",
+     1000,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "ROKOK",
+     "",
+     350000,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "X",
+     "",
+     500000000,
+     "Modal",
+     "IBU",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "X",
+     "",
+     7,
+     "Modal",
+     "ANI PUTRI",
+     "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1000,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1001,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1002,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1003,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1004,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1005,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1006,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1007,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1008,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1009,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1010,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1011,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1012,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1013,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1014,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1015,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1016,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1017,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1018,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1019,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "",
+     "Total 02/11",
+     "",
+     500371197,
+     "",
+     "",
+     ""
+    ],
+    [
+     "2026-11-03T05:00:00.000Z",
+     "X",
+     "",
+     45500,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "",
+     "Total 03/11",
+     "",
+     45500,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "TOTAL PER SUPPLIER",
+     "",
+     "Transaksi",
+     "Total",
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "X",
+     3,
+     500045507,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "CV. SUMBER CIPTA AGUNG",
+     1,
+     2450000,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "ROKOK",
+     2,
+     700000,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "GALON SANFORD",
+     1,
+     30000,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "GALON",
+     20,
+     20190,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "PT. OMEGA SUKSES ABADI",
+     1,
+     1000,
+     "",
+     "",
+     ""
+    ]
+   ],
+   "formatting": [
+    [
+     "setNumberFormats",
+     1,
+     1,
+     44,
+     7,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "0",
+       "#,##0"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ]
+     ]
+    ],
+    [
+     "setFontWeights",
+     1,
+     1,
+     44,
+     7,
+     [
+      [
+       "bold",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ]
+     ]
+    ],
+    [
+     "setBackgrounds",
+     1,
+     1,
+     44,
+     7,
+     [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ]
+    ],
+    [
+     "setFontColors",
+     1,
+     1,
+     44,
+     7,
+     [
+      [
+       "#000000",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ]
+     ]
+    ],
+    [
+     "setFontSize",
+     1,
+     1,
+     1,
+     1,
+     14
+    ]
+   ]
+  }
+ ],
+ [
+  "sheet OKT 2026",
+  {
+   "hidden": false,
+   "frozen": 5,
+   "hiddenCols": [],
+   "widths": {
+    "1": 100,
+    "2": 260,
+    "3": 100,
+    "4": 115,
+    "5": 120,
+    "6": 110,
+    "7": 200
+   },
+   "filter": false,
+   "protections": [],
+   "values": [
+    [
+     "999 MART — OKTOBER 2026",
+     "",
+     "",
+     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Total",
+     "Transfer Ibu",
+     "Uang Kasir",
+     "Modal",
+     "Lainnya",
+     "Transaksi",
+     ""
+    ],
+    [
+     1,
+     0,
+     0,
+     1,
+     0,
+     1,
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Tanggal",
+     "Nama PT / Barang",
+     "No. Invoice",
+     "Nominal",
+     "Bayar Pakai",
+     "Dicatat Oleh",
+     "Catatan"
+    ],
+    [
+     "2026-10-29T05:00:00.000Z",
+     "CV. SUMBER CIPTA AGUNG",
+     "INV/2210",
+     1,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "",
+     "Total 29/10",
+     "",
+     1,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "TOTAL PER SUPPLIER",
+     "",
+     "Transaksi",
+     "Total",
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "CV. SUMBER CIPTA AGUNG",
+     1,
+     1,
+     "",
+     "",
+     ""
+    ]
+   ],
+   "formatting": [
+    [
+     "setNumberFormats",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "0",
+       "#,##0"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ]
+     ]
+    ],
+    [
+     "setFontWeights",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "bold",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ]
+     ]
+    ],
+    [
+     "setBackgrounds",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ]
+    ],
+    [
+     "setFontColors",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "#000000",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ]
+     ]
+    ],
+    [
+     "setFontSize",
+     1,
+     1,
+     1,
+     1,
+     14
+    ]
+   ]
+  }
+ ],
+ [
+  "sheet SEP 2026",
+  {
+   "hidden": false,
+   "frozen": 5,
+   "hiddenCols": [],
+   "widths": {
+    "1": 100,
+    "2": 260,
+    "3": 100,
+    "4": 115,
+    "5": 120,
+    "6": 110,
+    "7": 200
+   },
+   "filter": false,
+   "protections": [],
+   "values": [
+    [
+     "999 MART — SEPTEMBER 2026",
+     "",
+     "",
+     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Total",
+     "Transfer Ibu",
+     "Uang Kasir",
+     "Modal",
+     "Lainnya",
+     "Transaksi",
+     ""
+    ],
+    [
+     4,
+     0,
+     0,
+     4,
+     0,
+     1,
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Tanggal",
+     "Nama PT / Barang",
+     "No. Invoice",
+     "Nominal",
+     "Bayar Pakai",
+     "Dicatat Oleh",
+     "Catatan"
+    ],
+    [
+     "2026-09-03T05:00:00.000Z",
+     "X",
+     "",
+     4,
+     "Modal",
+     "ANI PUTRI",
+     ""
+    ],
+    [
+     "",
+     "Total 03/09",
+     "",
+     4,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "TOTAL PER SUPPLIER",
+     "",
+     "Transaksi",
+     "Total",
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "X",
+     1,
+     4,
+     "",
+     "",
+     ""
+    ]
+   ],
+   "formatting": [
+    [
+     "setNumberFormats",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "0",
+       "#,##0"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ]
+     ]
+    ],
+    [
+     "setFontWeights",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "bold",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ]
+     ]
+    ],
+    [
+     "setBackgrounds",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ]
+    ],
+    [
+     "setFontColors",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "#000000",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ]
+     ]
+    ],
+    [
+     "setFontSize",
+     1,
+     1,
+     1,
+     1,
+     14
+    ]
+   ]
+  }
+ ],
+ [
+  "sheet SEP 2025",
+  {
+   "hidden": false,
+   "frozen": 5,
+   "hiddenCols": [],
+   "widths": {
+    "1": 100,
+    "2": 260,
+    "3": 100,
+    "4": 115,
+    "5": 120,
+    "6": 110,
+    "7": 200
+   },
+   "filter": false,
+   "protections": [],
+   "values": [
+    [
+     "999 MART — SEPTEMBER 2025",
+     "",
+     "",
+     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Total",
+     "Transfer Ibu",
+     "Uang Kasir",
+     "Modal",
+     "Lainnya",
+     "Transaksi",
+     ""
+    ],
+    [
+     5,
+     0,
+     0,
+     5,
+     0,
+     1,
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "Tanggal",
+     "Nama PT / Barang",
+     "No. Invoice",
+     "Nominal",
+     "Bayar Pakai",
+     "Dicatat Oleh",
+     "Catatan"
+    ],
+    [
+     "2025-09-28T05:00:00.000Z",
+     "X",
+     "",
+     5,
+     "Modal",
+     "IBU",
+     ""
+    ],
+    [
+     "",
+     "Total 28/09",
+     "",
+     5,
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "TOTAL PER SUPPLIER",
+     "",
+     "Transaksi",
+     "Total",
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "X",
+     1,
+     5,
+     "",
+     "",
+     ""
+    ]
+   ],
+   "formatting": [
+    [
+     "setNumberFormats",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "#,##0",
+       "0",
+       "#,##0"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@",
+       "@"
+      ],
+      [
+       "@",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@"
+      ]
+     ]
+    ],
+    [
+     "setFontWeights",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "bold",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ],
+      [
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold",
+       "bold"
+      ],
+      [
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal",
+       "normal"
+      ]
+     ]
+    ],
+    [
+     "setBackgrounds",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6",
+       "#fff4d6"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7",
+       "#e8eef7"
+      ],
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ]
+    ],
+    [
+     "setFontColors",
+     1,
+     1,
+     10,
+     7,
+     [
+      [
+       "#000000",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666",
+       "#666666"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ],
+      [
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000",
+       "#000000"
+      ]
+     ]
+    ],
+    [
+     "setFontSize",
+     1,
+     1,
+     1,
+     1,
+     14
+    ]
+   ]
+  }
+ ],
+ [
+  "sheet Data",
+  {
+   "hidden": false,
+   "frozen": 1,
+   "hiddenCols": [
+    12,
+    12
+   ],
+   "widths": {
+    "1": 100,
+    "2": 260,
+    "3": 100,
+    "4": 115,
+    "5": 120,
+    "6": 110,
+    "7": 200,
+    "8": 130,
+    "9": 110,
+    "10": 130,
+    "11": 80,
+    "12": 60
+   },
+   "filter": true,
+   "protections": [
+    {
+     "desc": "Boleh diubah. Tab bulanan ikut diperbarui otomatis.",
+     "warn": true
+    }
+   ],
+   "values": [
+    [
+     "Tanggal",
+     "Nama PT / Barang",
+     "No. Invoice",
+     "Nominal",
+     "Bayar Pakai",
+     "Dicatat Oleh",
+     "Catatan",
+     "Waktu Catat",
+     "Diubah Oleh",
+     "Waktu Ubah",
+     "Status",
+     "ID"
+    ],
+    [
+     "2026-10-29T05:00:00.000Z",
+     "CV. SUMBER CIPTA AGUNG",
+     "INV/2210",
+     1,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:00:00.000Z",
+     "ANI PUTRI",
+     "2026-11-02T04:10:00.000Z",
+     "AKTIF",
+     "id-addtransferwithinvoice"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "ROKOK",
+     "",
+     360000,
+     "Uang Kasir",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:05:00.000Z",
+     "ANI PUTRI",
+     "2026-11-02T04:10:00.000Z",
+     "DIHAPUS",
+     "id-addcashnoinvoice"
+    ],
+    [
+     "2026-11-01T05:00:00.000Z",
+     "TOKO KUE MAMA LINA",
+     "",
+     125003,
+     "Lainnya: BUJANG",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "IBU",
+     "2026-11-05T03:11:00.000Z",
+     "DIHAPUS",
+     "id-addLainnyanewsupplier"
+    ],
+    [
+     "2026-11-01T05:00:00.000Z",
+     "CV. SUMBER CIPTA AGUNG",
+     "INV/2210",
+     2450000,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-addmodalpreviousmonth"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "PT. OMEGA SUKSES ABADI",
+     "0012345",
+     1000,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-dupsameinvoiceothersupplierisf"
+    ],
+    [
+     "2026-11-01T05:00:00.000Z",
+     "ROKOK",
+     "",
+     350000,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-dupsamenameamountotherdateisfi"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "ROKOK",
+     "",
+     350000,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-dupforced"
+    ],
+    [
+     "2026-11-03T05:00:00.000Z",
+     "X",
+     "",
+     45500,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-okamountRp1500"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "X",
+     "",
+     500000000,
+     "Modal",
+     "IBU",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-okamountatmax"
+    ],
+    [
+     "2026-09-03T05:00:00.000Z",
+     "X",
+     "",
+     4,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-okworker60daysback"
+    ],
+    [
+     "2025-09-28T05:00:00.000Z",
+     "X",
+     "",
+     5,
+     "Modal",
+     "IBU",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-okadmin400daysback"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "X",
+     "",
+     7,
+     "Modal",
+     "ANI PUTRI",
+     "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "id-oklongnotetrimmedto200"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1000,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000000"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1001,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000001"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1002,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000002"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1003,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000003"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1004,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000004"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1005,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000005"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1006,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000006"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1007,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000007"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1008,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000008"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1009,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000009"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1010,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000010"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1011,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000011"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1012,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000012"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1013,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000013"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1014,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000014"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1015,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000015"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1016,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000016"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1017,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000017"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1018,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000018"
+    ],
+    [
+     "2026-11-02T05:00:00.000Z",
+     "GALON",
+     "",
+     1019,
+     "Modal",
+     "ANI PUTRI",
+     "",
+     "2026-11-02T03:10:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "rate000019"
+    ],
+    [
+     "2026-11-01T05:00:00.000Z",
+     "GALON SANFORD",
+     "",
+     30000,
+     "Uang Kasir",
+     "MANUAL",
+     "diketik manual",
+     "2026-11-05T03:11:00.000Z",
+     "",
+     "",
+     "AKTIF",
+     "m000000000000000"
+    ]
+   ],
+   "formatting": [
+    [
+     "setFontWeight",
+     1,
+     1,
+     1,
+     12,
+     "bold"
+    ],
+    [
+     "setBackground",
+     1,
+     1,
+     1,
+     12,
+     "#e8eef7"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     1,
+     999,
+     1,
+     "dd/mm/yyyy"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     2,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     3,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     4,
+     999,
+     1,
+     "#,##0"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     5,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     6,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     7,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     8,
+     999,
+     1,
+     "dd/mm/yyyy HH:mm"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     9,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     10,
+     999,
+     1,
+     "dd/mm/yyyy HH:mm"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     11,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormat",
+     2,
+     12,
+     999,
+     1,
+     "@"
+    ],
+    [
+     "setNumberFormats",
+     4,
+     1,
+     1,
+     12,
+     [
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@",
+       "dd/mm/yyyy HH:mm",
+       "@",
+       "dd/mm/yyyy HH:mm",
+       "@",
+       "@"
+      ]
+     ]
+    ],
+    [
+     "setNumberFormats",
+     4,
+     1,
+     1,
+     12,
+     [
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@",
+       "dd/mm/yyyy HH:mm",
+       "@",
+       "dd/mm/yyyy HH:mm",
+       "@",
+       "@"
+      ]
+     ]
+    ],
+    [
+     "setNumberFormats",
+     4,
+     1,
+     1,
+     12,
+     [
+      [
+       "dd/mm/yyyy",
+       "@",
+       "@",
+       "#,##0",
+       "@",
+       "@",
+       "@",
+       "dd/mm/yyyy HH:mm",
+       "@",
+       "dd/mm/yyyy HH:mm",
+       "@",
+       "@"
+      ]
+     ]
+    ]
+   ]
+  }
+ ],
+ [
+  "sheet Supplier",
+  {
+   "hidden": false,
+   "frozen": 1,
+   "hiddenCols": [],
+   "widths": {
+    "1": 300
+   },
+   "filter": false,
+   "protections": [],
+   "values": [
+    [
+     "Nama PT / Barang",
+     "Aktif",
+     "Ditambah Oleh",
+     "Tgl Ditambah"
+    ],
+    [
+     "PT. YAFINDO MITRA PERMATA",
+     "YA",
+     "SETUP",
+     "2026-11-02T03:00:00.000Z"
+    ],
+    [
+     "PT. SAMPURNA SUKSES ABADI",
+     "YA",
+     "SETUP",
+     "2026-11-02T03:00:00.000Z"
+    ],
+    [
+     "UANG SAMPAH",
+     "YA",
+     "SETUP",
+     "2026-11-02T03:00:00.000Z"
+    ],
+    [
+     "TOKO KUE MAMA LINA",
+     "YA",
+     "ANI PUTRI",
+     "2026-11-02T03:10:00.000Z"
+    ],
+    [
+     "X",
+     "YA",
+     "ANI PUTRI",
+     "2026-11-02T03:10:00.000Z"
+    ],
+    [
+     "GALON",
+     "YA",
+     "ANI PUTRI",
+     "2026-11-02T03:10:00.000Z"
+    ]
+   ],
+   "formatting": [
+    [
+     "setFontWeight",
+     1,
+     1,
+     1,
+     4,
+     "bold"
+    ],
+    [
+     "setBackground",
+     1,
+     1,
+     1,
+     4,
+     "#e8eef7"
+    ],
+    [
+     "setFontWeight",
+     1,
+     1,
+     1,
+     4,
+     "bold"
+    ],
+    [
+     "setBackground",
+     1,
+     1,
+     1,
+     4,
+     "#e8eef7"
+    ],
+    [
+     "setNumberFormats",
+     125,
+     1,
+     1,
+     4,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "dd/mm/yyyy"
+      ]
+     ]
+    ],
+    [
+     "setNumberFormats",
+     126,
+     1,
+     1,
+     4,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "dd/mm/yyyy"
+      ]
+     ]
+    ],
+    [
+     "setNumberFormats",
+     127,
+     1,
+     1,
+     4,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "dd/mm/yyyy"
+      ]
+     ]
+    ]
+   ]
+  }
+ ],
+ [
+  "sheet Log",
+  {
+   "hidden": false,
+   "frozen": 1,
+   "hiddenCols": [],
+   "widths": {},
+   "filter": false,
+   "protections": [
+    {
+     "desc": "Catatan otomatis",
+     "warn": true
+    }
+   ],
+   "values": [
+    [
+     "Waktu",
+     "Oleh",
+     "Aksi",
+     "Tanggal Transaksi",
+     "Nama PT / Barang",
+     "Keterangan",
+     "Perangkat",
+     "ID"
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+     "Masuk",
+     "",
+     "",
+     "",
+     "HP-30",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "HP-LOCK",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "HP-LOCK",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "HP-LOCK",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "HP-LOCK",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "HP-LOCK",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI PUTRI",
+     "Masuk",
+     "",
+     "",
+     "",
+     "HP-A (Android 10; SM-A105)",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "IBU",
+     "Masuk (admin)",
+     "",
+     "",
+     "",
+     "Laptop",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-1",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-2",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-3",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-4",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-5",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-6",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-7",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-8",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-9",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-10",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-11",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-12",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-13",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-14",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-15",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-16",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-17",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-18",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-19",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-20",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-21",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-22",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-23",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-24",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-25",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-26",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-27",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-28",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-29",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "BOT",
+     "Gagal masuk",
+     "",
+     "",
+     "Kata sandi salah",
+     "bot-30",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI",
+     "Masuk",
+     "",
+     "",
+     "",
+     "HP-NEW",
+     ""
+    ],
+    [
+     "2026-11-02T03:00:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "PT. YAFINDO MITRA PERMATA",
+     "Rp 1.776.424 · Transfer Ibu",
+     "",
+     "id-addtransferwithinvoice"
+    ],
+    [
+     "2026-11-02T03:05:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "ROKOK",
+     "Rp 350.000 · Uang Kasir",
+     "",
+     "id-addcashnoinvoice"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-01",
+     "TOKO KUE MAMA LINA",
+     "Rp 125.000 · Lainnya: BUJANG",
+     "",
+     "id-addLainnyanewsupplier"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-10-28",
+     "CV. SUMBER CIPTA AGUNG",
+     "Rp 2.450.000 · Modal",
+     "",
+     "id-addmodalpreviousmonth"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "PT. OMEGA SUKSES ABADI",
+     "Rp 1.000 · Modal",
+     "",
+     "id-dupsameinvoiceothersupplierisf"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-01",
+     "ROKOK",
+     "Rp 350.000 · Modal",
+     "",
+     "id-dupsamenameamountotherdateisfi"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "ROKOK",
+     "Rp 350.000 · Modal · disimpan walau ada yang mirip",
+     "",
+     "id-dupforced"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "X",
+     "Rp 2 · Modal",
+     "",
+     "id-okinvoice30chars"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "X",
+     "Rp 1.500 · Modal",
+     "",
+     "id-okamountRp1500"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "IBU",
+     "Tambah",
+     "2026-11-02",
+     "X",
+     "Rp 500.000.000 · Modal",
+     "",
+     "id-okamountatmax"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-09-03",
+     "X",
+     "Rp 4 · Modal",
+     "",
+     "id-okworker60daysback"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "IBU",
+     "Tambah",
+     "2025-09-28",
+     "X",
+     "Rp 5 · Modal",
+     "",
+     "id-okadmin400daysback"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "X",
+     "Rp 7 · Modal",
+     "",
+     "id-oklongnotetrimmedto200"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.000 · Modal",
+     "",
+     "rate000000"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.001 · Modal",
+     "",
+     "rate000001"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.002 · Modal",
+     "",
+     "rate000002"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.003 · Modal",
+     "",
+     "rate000003"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.004 · Modal",
+     "",
+     "rate000004"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.005 · Modal",
+     "",
+     "rate000005"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.006 · Modal",
+     "",
+     "rate000006"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.007 · Modal",
+     "",
+     "rate000007"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.008 · Modal",
+     "",
+     "rate000008"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.009 · Modal",
+     "",
+     "rate000009"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.010 · Modal",
+     "",
+     "rate000010"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.011 · Modal",
+     "",
+     "rate000011"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.012 · Modal",
+     "",
+     "rate000012"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.013 · Modal",
+     "",
+     "rate000013"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.014 · Modal",
+     "",
+     "rate000014"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.015 · Modal",
+     "",
+     "rate000015"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.016 · Modal",
+     "",
+     "rate000016"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.017 · Modal",
+     "",
+     "rate000017"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.018 · Modal",
+     "",
+     "rate000018"
+    ],
+    [
+     "2026-11-02T03:10:00.000Z",
+     "ANI PUTRI",
+     "Tambah",
+     "2026-11-02",
+     "GALON",
+     "Rp 1.019 · Modal",
+     "",
+     "rate000019"
+    ],
+    [
+     "2026-11-02T04:10:00.000Z",
+     "ANI PUTRI",
+     "Ubah",
+     "2026-11-02",
+     "PT. YAFINDO MITRA PERMATA",
+     "Nominal: Rp 1.776.424 → Rp 1.767.424",
+     "",
+     "id-addtransferwithinvoice"
+    ],
+    [
+     "2026-11-02T04:10:00.000Z",
+     "ANI PUTRI",
+     "Ubah",
+     "2026-10-30",
+     "PT. OMEGA SUKSES ABADI",
+     "Tanggal: 02/11/2026 → 30/10/2026; Nama: PT. YAFINDO MITRA PERMATA → PT. OMEGA SUKSES ABADI; Invoice: 0012345 → A-1; Nominal: Rp 1.767.424 → Rp 1.000.000; Bayar pakai: Transfer Ibu → Lainnya: MUDA; Catatan: retur 2 dus → -",
+     "",
+     "id-addtransferwithinvoice"
+    ],
+    [
+     "2026-11-02T04:10:00.000Z",
+     "ANI PUTRI",
+     "Ubah",
+     "2026-10-29",
+     "CV. SUMBER CIPTA AGUNG",
+     "Tanggal: 30/10/2026 → 29/10/2026; Nama: PT. OMEGA SUKSES ABADI → CV. SUMBER CIPTA AGUNG; Invoice: A-1 → INV/2210; Nominal: Rp 1.000.000 → Rp 1; Bayar pakai: Lainnya: MUDA → Modal",
+     "",
+     "id-addtransferwithinvoice"
+    ],
+    [
+     "2026-11-02T04:10:00.000Z",
+     "ANI PUTRI",
+     "Hapus",
+     "2026-11-02",
+     "ROKOK",
+     "Alasan: Tercatat dua kali · Rp 350.000",
+     "",
+     "id-addcashnoinvoice"
+    ],
+    [
+     "2026-11-05T03:09:00.000Z",
+     "ANI PUTRI",
+     "Ubah",
+     "2026-11-01",
+     "TOKO KUE MAMA LINA",
+     "Nominal: Rp 125.000 → Rp 125.001; Catatan: =HYPERLINK(\"http://x\") → -",
+     "",
+     "id-addLainnyanewsupplier"
+    ],
+    [
+     "2026-11-05T03:11:00.000Z",
+     "IBU",
+     "Ubah",
+     "2026-11-01",
+     "TOKO KUE MAMA LINA",
+     "Nominal: Rp 125.001 → Rp 125.003",
+     "",
+     "id-addLainnyanewsupplier"
+    ],
+    [
+     "2026-11-05T03:11:00.000Z",
+     "IBU",
+     "Hapus",
+     "2026-11-01",
+     "TOKO KUE MAMA LINA",
+     "Alasan: Salah input · Rp 125.003",
+     "",
+     "id-addLainnyanewsupplier"
+    ],
+    [
+     "2026-11-05T03:11:00.000Z",
+     "ibu@example.com",
+     "Ubah manual",
+     "2026-11-02",
+     "ROKOK",
+     "Nominal: 350000 → 360000",
+     "Google Sheets",
+     "id-addcashnoinvoice"
+    ],
+    [
+     "2026-11-05T03:11:00.000Z",
+     "SHEET",
+     "Ubah manual",
+     "2026-11-01",
+     "CV. SUMBER CIPTA AGUNG",
+     "Tanggal: 28/10/2026 → 01/11/2026",
+     "Google Sheets",
+     "id-addmodalpreviousmonth"
+    ],
+    [
+     "2026-11-05T03:11:00.000Z",
+     "SHEET",
+     "Tambah manual",
+     "2026-11-01",
+     "GALON SANFORD",
+     "Ditambah langsung di sheet",
+     "Google Sheets",
+     "m000000000000000"
+    ],
+    [
+     "2026-11-05T03:11:00.000Z",
+     "ibu@example.com",
+     "Ubah manual",
+     "2026-11-03",
+     "X",
+     "Beberapa sel diubah",
+     "Google Sheets",
+     "id-okamountRp1500"
+    ],
+    [
+     "2026-11-05T03:11:00.000Z",
+     "BUDI",
+     "Masuk",
+     "",
+     "",
+     "",
+     "HP-B",
+     ""
+    ],
+    [
+     "2027-02-04T03:11:00.000Z",
+     "BUDI",
+     "Masuk",
+     "",
+     "",
+     "",
+     "HP-B",
+     ""
+    ]
+   ],
+   "formatting": [
+    [
+     "setFontWeight",
+     1,
+     1,
+     1,
+     8,
+     "bold"
+    ],
+    [
+     "setBackground",
+     1,
+     1,
+     1,
+     8,
+     "#e8eef7"
+    ],
+    [
+     "setFontWeight",
+     1,
+     1,
+     1,
+     8,
+     "bold"
+    ],
+    [
+     "setBackground",
+     1,
+     1,
+     1,
+     8,
+     "#e8eef7"
+    ]
+   ]
+  }
+ ],
+ [
+  "sheet Sesi",
+  {
+   "hidden": true,
+   "frozen": 1,
+   "hiddenCols": [],
+   "widths": {},
+   "filter": false,
+   "protections": [],
+   "values": [
+    [
+     "Token (hash)",
+     "Nama",
+     "Peran",
+     "Dibuat",
+     "Terakhir Dipakai",
+     "Perangkat",
+     "Epoch"
+    ],
+    [
+     "a15c81ae1a15ad61d5b89bd5dcfd1859b364cc506a1b7880205da84ae044666c",
+     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+     "PEKERJA",
+     "2026-11-02T03:00:00.000Z",
+     "2026-11-02T03:00:00.000Z",
+     "HP-30",
+     "3"
+    ],
+    [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [
+     "d92ff82f438211602e409c8bddbd8c8da066a843a6cc4af6afddd9f8efca4f7e",
+     "IBU",
+     "ADMIN",
+     "2026-11-02T03:00:00.000Z",
+     "2026-11-05T03:11:00.000Z",
+     "Laptop",
+     "3"
+    ],
+    [
+     "7692d9ac0a27e72c8b84c58e589b2653a566f6659507a9ce86f18067b9c031e4",
+     "ANI",
+     "PEKERJA",
+     "2026-11-02T03:00:00.000Z",
+     "2026-11-02T03:00:00.000Z",
+     "HP-NEW",
+     "3"
+    ],
+    [
+     "901a524db2212613b33848eb88edf9f9da6be5f4f748b58ec2d196e6ea8b5f09",
+     "BUDI",
+     "PEKERJA",
+     "2026-11-05T03:11:00.000Z",
+     "2026-11-05T03:11:00.000Z",
+     "HP-B",
+     "3"
+    ],
+    [
+     "64e603b061e4f636a793ac0d4b8367899b764b2eb81ef694d789099fb4cae6c7",
+     "BUDI",
+     "PEKERJA",
+     "2027-02-04T03:11:00.000Z",
+     "2027-02-04T03:11:00.000Z",
+     "HP-B",
+     "3"
+    ]
+   ],
+   "formatting": [
+    [
+     "setFontWeight",
+     1,
+     1,
+     1,
+     7,
+     "bold"
+    ],
+    [
+     "setBackground",
+     1,
+     1,
+     1,
+     7,
+     "#e8eef7"
+    ],
+    [
+     "setFontWeight",
+     1,
+     1,
+     1,
+     7,
+     "bold"
+    ],
+    [
+     "setBackground",
+     1,
+     1,
+     1,
+     7,
+     "#e8eef7"
+    ]
+   ]
+  }
+ ],
+ [
+  "triggers",
+  [
+   "onDataEdit",
+   "onDataChange"
+  ]
+ ],
+ [
+  "properties at end",
+  {
+   "PW_ADMIN": "261aea9494cf0d49459064a76fe53c71d2d8e08a3468b2c9783d0e9f20ca5e89",
+   "PW_SALT": "00000000000000000000000000000001",
+   "PW_WORKER": "86b8ba1462912f9e82522f2883d5231deebf28aadcbb2d657e4b4427b8cde454",
+   "SES_EPOCH": "4",
+   "SS_ID": "SS123"
+  }
+ ]
+]

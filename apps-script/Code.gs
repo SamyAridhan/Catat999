@@ -19,6 +19,7 @@
  */
 
 var APP_NAME = 'Catat 999';
+var TITLE_PREFIX = '999 MART — ';   // first cell of every month tab the script builds (how it recognises its own tabs)
 var TZ = 'Asia/Jakarta'; // Batam = WIB (UTC+7)
 var SH = { DATA: 'Data', SUP: 'Supplier', LOG: 'Log', SES: 'Sesi' };
 var AKTIF = 'AKTIF', DIHAPUS = 'DIHAPUS';
@@ -34,7 +35,7 @@ var LIMIT = {
   sessionDays: 90,
   minPassword: 8,
   failsPerDevice: 5,       // wrong passwords before that phone is locked out (15 min)
-  failsGlobal: 30,         // wrong passwords from anywhere before all logins pause (15 min)
+  failsGlobal: 30, failsGlobalHard: 300,         // wrong passwords from anywhere before all logins pause (15 min)
   writesPerMinute: 20,
   maxBody: 20000
 };
@@ -138,9 +139,12 @@ function login_(name, password, device) {
   var dev = cleanDevice_(device);
   var devKey = 'lf_' + sha256_(dev || 'unknown').slice(0, 24);
   var gFails = Number(cache.get('lf_all') || 0), dFails = Number(cache.get(devKey) || 0);
-  if (gFails >= LIMIT.failsGlobal || dFails >= LIMIT.failsPerDevice) {
+  // Per phone: 5 wrong tries → 15 min pause. Shop-wide: many failures only SLOW logins down, so a stranger
+  // guessing passwords can't lock every worker out; a hard stop only kicks in under a sustained attack.
+  if (dFails >= LIMIT.failsPerDevice || gFails >= LIMIT.failsGlobalHard) {
     return { ok: false, error: 'Terlalu banyak percobaan. Coba lagi 15 menit lagi.' };
   }
+  if (gFails >= LIMIT.failsGlobal) Utilities.sleep(3000);
   var nm = cleanPersonName_(name);
   if (!nm) return { ok: false, error: 'Isi nama Anda (huruf saja, 2–30 karakter).' };
   var pw = String(password || '');
@@ -175,7 +179,10 @@ function auth_(token) {
   token = String(token || '');
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
   var hash = sha256_(token);
-  var rows = readTable_(SH.SES, SES_HEADERS.length);
+  var ses = sheet_(SH.SES), lastRow = ses.getLastRow();
+  if (lastRow < 2) return null;
+  // NOT readTable_: it skips blank rows (left by logouts), which would shift every row number below them
+  var rows = ses.getRange(2, 1, lastRow - 1, SES_HEADERS.length).getValues();
   var ep = epoch_();
   for (var i = 0; i < rows.length; i++) {
     if (rows[i][0] !== hash) continue;
@@ -183,7 +190,7 @@ function auth_(token) {
     if (String(r[6]) !== ep) return null;
     var last = r[4] instanceof Date ? r[4].getTime() : 0;
     if (Date.now() - last > LIMIT.sessionDays * 86400000) return null;
-    if (Date.now() - last > 3600000) sheet_(SH.SES).getRange(i + 2, 5).setValue(new Date());
+    if (Date.now() - last > 3600000) ses.getRange(i + 2, 5).setValue(new Date());
     return { user: { name: String(r[1]).replace(/^'/, ''), role: r[2] === 'ADMIN' ? 'ADMIN' : 'PEKERJA' }, hash: hash, row: i + 2 };
   }
   return null;
@@ -264,16 +271,18 @@ function add_(user, e, force) {
   row[C.FROM] = v.paidFrom; row[C.BY] = user.name; row[C.NOTE] = v.note; row[C.AT] = new Date();
   row[C.EDITBY] = ''; row[C.EDITAT] = ''; row[C.STATUS] = AKTIF; row[C.ID] = id;
   writeRow_(sheet_(SH.DATA).getLastRow() + 1, row);
+  log_(user, 'Tambah', rowToObj_(row), rupiah_(v.amount) + ' · ' + v.paidFrom + (force ? ' · disimpan walau ada yang mirip' : ''));
   refreshViews_([v.date.slice(0, 7)]);
   return { ok: true, entry: rowToObj_(row) };
 }
 
 function update_(user, id, e, force) {
   var found = findRow_(String(id || ''));
-  if (!found) return { ok: false, error: 'Transaksi tidak ditemukan.' };
+  if (!found) return { ok: false, error: 'Transaksi tidak ditemukan. Mungkin sudah dihapus — muat ulang Riwayat.' };
   var r = found.row;
+  if (isDeleted_(r)) return { ok: false, error: 'Transaksi ini sudah dihapus.' };
   if (!canEdit_(user, r)) return { ok: false, error: editDeniedMsg_(r) };
-  var v = validateEntry_(e, user);
+  var v = validateEntry_(e, user, fmtDate_(r[C.DATE]));
   if (v.error) return { ok: false, code: 'INVALID', error: v.error };
   v.name = supplierName_(v.name, user);
   if (!force) {
@@ -295,7 +304,7 @@ function update_(user, id, e, force) {
 
 function remove_(user, id, reason) {
   var found = findRow_(String(id || ''));
-  if (!found) return { ok: false, error: 'Transaksi tidak ditemukan.' };
+  if (!found) return { ok: false, error: 'Transaksi tidak ditemukan. Mungkin sudah dihapus — muat ulang Riwayat.' };
   var r = found.row;
   if (isDeleted_(r)) return { ok: true, already: true };
   if (!canEdit_(user, r)) return { ok: false, error: editDeniedMsg_(r) };
@@ -364,11 +373,13 @@ function findDuplicate_(data, v, selfId) {
 
 // ───────────────────────────── validation & sanitising ─────────────────────────────
 
-function validateEntry_(e, user) {
+function validateEntry_(e, user, keepDate) {
   if (!e || typeof e !== 'object') return { error: 'Data tidak valid.' };
   var out = {};
   out.date = String(e.date || '');
-  var dErr = checkDate_(out.date, user.role === 'ADMIN' ? LIMIT.adminBackDays : LIMIT.workerBackDays);
+  // when editing, a date that stays the same is not refused for being "too old" (still never in the future)
+  var back = keepDate && out.date === keepDate ? 100000 : (user.role === 'ADMIN' ? LIMIT.adminBackDays : LIMIT.workerBackDays);
+  var dErr = checkDate_(out.date, back);
   if (dErr) return { error: dErr };
   out.name = cleanSupplierName_(e.name);
   if (!out.name) return { error: 'Nama PT / barang wajib diisi.' };
@@ -395,27 +406,30 @@ function checkDate_(s, backDays) {
   return '';
 }
 
+/** Only plain strings and numbers count as text; objects/arrays sent by a malicious client become ''. */
+function text_(v) { return typeof v === 'string' ? v : (typeof v === 'number' && isFinite(v) ? String(v) : ''); }
+
 function cleanSupplierName_(v) {
-  var s = String(v === undefined || v === null ? '' : v).toUpperCase()
+  var s = text_(v).toUpperCase()
     .replace(/[^A-Z0-9 .,&\/()'+\-]/g, ' ').replace(/\s+/g, ' ').trim();
-  s = s.replace(/^[=+\-@]+/, '').trim();
+  s = s.replace(/^[=+\-@\s]+/, '').trim();
   return s.length > 60 ? s.slice(0, 60).trim() : s;
 }
 
 function cleanInvoice_(v) {
-  var s = String(v === undefined || v === null ? '' : v).toUpperCase().replace(/\s+/g, '').trim();
+  var s = text_(v).toUpperCase().replace(/\s+/g, '').trim();
   if (!s) return '';
   if (!/^[A-Z0-9\-\/.]{1,30}$/.test(s)) return null;
   return s;
 }
 
 function cleanPersonName_(v) {
-  var s = String(v === undefined || v === null ? '' : v).toUpperCase().replace(/\s+/g, ' ').trim();
+  var s = text_(v).toUpperCase().replace(/\s+/g, ' ').trim();
   return /^[A-Z][A-Z .'\-]{1,29}$/.test(s) ? s : '';
 }
 
 function cleanPayFrom_(v) {
-  var s = String(v || '').trim();
+  var s = text_(v).trim();
   for (var i = 0; i < PAY_FROM.length; i++) if (s.toUpperCase() === PAY_FROM[i].toUpperCase()) return PAY_FROM[i];
   var m = /^lainnya\s*:?\s*(.*)$/i.exec(s);
   if (m) {
@@ -426,7 +440,7 @@ function cleanPayFrom_(v) {
 }
 
 function cleanFree_(v, max) {
-  return String(v === undefined || v === null ? '' : v).replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+  return text_(v).replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max).trim();
 }
 
 function cleanDevice_(v) { return cleanFree_(v, 120); }
@@ -434,7 +448,8 @@ function cleanDevice_(v) { return cleanFree_(v, 120); }
 /** Text that starts like a formula is stored as plain text (leading apostrophe; Sheets hides it). */
 function safeText_(s) {
   s = String(s);
-  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+  // a leading apostrophe is also protected, so text that really starts with ' survives the round trip
+  return /^[=+\-@\t\r']/.test(s) ? "'" + s : s;
 }
 function unquote_(s) { return String(s).replace(/^'/, ''); }
 
@@ -461,6 +476,14 @@ function buildMonth_(ym, rows) {
       var da = fmtDate_(a[C.DATE]), db = fmtDate_(b[C.DATE]);
       return da !== db ? (da < db ? -1 : 1) : toTime_(a[C.AT]) - toTime_(b[C.AT]);
     });
+  // A tab with this name that the script did NOT build (e.g. Ibu pasted an old month sheet) is moved aside, never wiped.
+  if (sh && sh.getLastRow() > 0 && String(sh.getRange(1, 1).getValue()).indexOf(TITLE_PREFIX) !== 0) {
+    var alt = name + ' (lama)', k = 2;
+    while (ss.getSheetByName(alt)) alt = name + ' (lama ' + (k++) + ')';
+    sh.setName(alt);
+    log_({ name: 'SISTEM', device: '' }, 'Tab dipindah', null, 'Tab "' + name + '" bukan buatan aplikasi, diganti nama jadi "' + alt + '"');
+    sh = null;
+  }
   if (!sh) {
     if (!list.length) return;              // never create an empty tab
     sh = ss.insertSheet(name, monthSheetIndex_(ss, ym));
@@ -480,7 +503,7 @@ function buildMonth_(ym, rows) {
 
   var out = [], kinds = [];
   function push(arr, kind) { arr = arr.slice(); while (arr.length < W) arr.push(''); out.push(arr); kinds.push(kind || ''); }
-  push(['999 MART — ' + BULAN_PANJANG[m - 1] + ' ' + y, '', '', 'Otomatis dari aplikasi ' + APP_NAME + '. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui ' +
+  push([TITLE_PREFIX + BULAN_PANJANG[m - 1] + ' ' + y, '', '', 'Otomatis dari aplikasi ' + APP_NAME + '. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui ' +
     Utilities.formatDate(new Date(), TZ, 'dd/MM HH:mm') + '.'], 'title');
   push(['Total', 'Transfer Ibu', 'Uang Kasir', 'Modal', 'Lainnya', 'Transaksi'], 'sumlabel');
   push([total, byFrom['Transfer Ibu'], byFrom['Uang Kasir'], byFrom['Modal'], byFrom['Lainnya'], list.length], 'sumvalue');
@@ -630,17 +653,31 @@ function onDataEdit(e) {
   if (n <= 0) return;
   var vals = sh.getRange(r0, 1, n, DATA_HEADERS.length).getValues();
   var months = {};
-  var who = { name: 'SHEET', device: '' };
+  var email = '';
+  try { email = e.user && e.user.getEmail ? e.user.getEmail() : ''; } catch (err) { }
+  var who = { name: email || 'SHEET', device: 'Google Sheets' };
+  // IDs used by OTHER rows: a pasted copy of a row brings its hidden ID along and must get a new one
+  var last = sh.getLastRow(), idCount = {};
+  if (last >= 2) sh.getRange(2, C.ID + 1, last - 1, 1).getValues().forEach(function (x) { if (x[0]) idCount[x[0]] = (idCount[x[0]] || 0) + 1; });
   vals.forEach(function (r, i) {
     var empty = !r.slice(0, 7).some(function (c) { return c !== '' && c !== null; });
     if (empty) return;
+    var row = r0 + i;
+    var fixed = normalizeTypedRow_(r);   // "01/11/2026" typed as text → real date, "350.000" → number
     var d = fmtDate_(r[C.DATE]); if (d) months[d.slice(0, 7)] = true;
-    if (!r[C.ID]) {
+    // Only the cells the script changes are written back — never re-write text Ibu typed: Sheets hands text back
+    // without its protective apostrophe, so writing it again could turn "'+62…" or "'=…" into a number/formula.
+    var put = function (col, v) { sh.getRange(row, col + 1).setValue(typeof v === 'string' ? safeText_(v) : v); };
+    if (fixed) { put(C.DATE, r[C.DATE]); put(C.AMT, r[C.AMT]); }
+    var copied = !!r[C.ID] && idCount[r[C.ID]] > 1 && isLaterCopy_(sh, row, r[C.ID]);
+    if (!r[C.ID] || copied) {
       r[C.ID] = 'm' + Utilities.getUuid().replace(/-/g, '').slice(0, 15);
+      if (copied) { r[C.BY] = 'MANUAL'; r[C.AT] = new Date(); r[C.EDITBY] = ''; r[C.EDITAT] = ''; put(C.EDITBY, ''); put(C.EDITAT, ''); }
       r[C.BY] = r[C.BY] || 'MANUAL'; r[C.AT] = r[C.AT] || new Date(); r[C.STATUS] = r[C.STATUS] || AKTIF;
-      if (typeof r[C.NAME] === 'string') r[C.NAME] = cleanSupplierName_(r[C.NAME]) || r[C.NAME];
-      sh.getRange(r0 + i, 1, 1, DATA_HEADERS.length).setValues([r]);
-      log_(who, 'Tambah manual', rowToObj_(r), 'Ditambah langsung di sheet');
+      var clean = typeof r[C.NAME] === 'string' ? cleanSupplierName_(r[C.NAME]) : '';
+      if (clean && clean !== r[C.NAME]) { r[C.NAME] = clean; put(C.NAME, clean); }
+      put(C.ID, r[C.ID]); put(C.BY, r[C.BY]); put(C.AT, r[C.AT]); put(C.STATUS, r[C.STATUS]);
+      log_(who, 'Tambah manual', rowToObj_(r), copied ? 'Baris disalin di sheet (ID baru)' : 'Ditambah langsung di sheet');
     } else {
       log_(who, 'Ubah manual', rowToObj_(r), e.range.getNumRows() === 1 && e.range.getNumColumns() === 1
         ? DATA_HEADERS[e.range.getColumn() - 1] + ': ' + String(e.oldValue === undefined ? '' : e.oldValue) + ' → ' + String(e.value === undefined ? '' : e.value)
@@ -651,6 +688,14 @@ function onDataEdit(e) {
     var od = parseLooseDate_(e.oldValue); if (od) months[od.slice(0, 7)] = true;
   }
   refreshViews_(Object.keys(months));
+}
+
+/** True when another row ABOVE this one already carries the same ID (so this row is the pasted copy). */
+function isLaterCopy_(sh, row, id) {
+  if (row <= 2) return false;
+  var above = sh.getRange(2, C.ID + 1, row - 2, 1).getValues();
+  for (var i = 0; i < above.length; i++) if (above[i][0] === id) return true;
+  return false;
 }
 
 /** Installable trigger: rows deleted/inserted in Data → rebuild all month tabs. */
@@ -752,13 +797,27 @@ function fmtDate_(v) {
 
 /** Accepts yyyy-mm-dd or dd/mm/yyyy (what Ibu might type in Data). */
 function parseLooseDate_(v) {
-  var s = String(v || '').trim(), m;
-  if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s))) return m[1] + '-' + m[2] + '-' + m[3];
-  if ((m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/.exec(s))) {
-    var y = Number(m[3]); if (y < 100) y += 2000;
-    return y + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  var s = text_(v).trim(), m, y, mo, d;
+  if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(s))) { d = +m[1]; mo = +m[2]; y = +m[3]; if (y < 100) y += 2000; }
+  else return '';
+  var dt = new Date(y, mo - 1, d, 12);   // reject 31/02, 13/13 …
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return '';
+  return y + '-' + ('0' + mo).slice(-2) + '-' + ('0' + d).slice(-2);
+}
+
+/** Cells Ibu typed by hand: a text date becomes a real date, a text amount ("350.000", "Rp 1.500") a number. */
+function normalizeTypedRow_(r) {
+  var changed = false;
+  if (typeof r[C.DATE] === 'string' && r[C.DATE]) {
+    var d = parseLooseDate_(r[C.DATE]);
+    if (d) { r[C.DATE] = toDate_(d); changed = true; }
   }
-  return '';
+  if (typeof r[C.AMT] === 'string' && /\d/.test(r[C.AMT]) && !/[.,]\d{1,2}$/.test(r[C.AMT].trim())) {
+    var a = Number(r[C.AMT].replace(/[^\d]/g, ''));
+    if (a > 0) { r[C.AMT] = a; changed = true; }
+  }
+  return changed;
 }
 
 function fmtDateTime_(v) { return v instanceof Date && !isNaN(v) ? Utilities.formatDate(v, TZ, "yyyy-MM-dd'T'HH:mm:ss") : ''; }

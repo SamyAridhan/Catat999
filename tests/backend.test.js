@@ -87,9 +87,13 @@ test('brute force: wrong password slows down, logs, locks the device after 5', (
   assert.ok(login('BUDI', 'tokoSembilan9', 'budi-phone').ok, 'other phones unaffected');
   assert.ok(logRows().some(r => r[2] === 'Gagal masuk'));
 });
-test('brute force: global pause after 30 failures from anywhere', () => {
+test('brute force: many failures from anywhere SLOW logins (no shop-wide lockout); hard stop only at 300', () => {
   for (let i = 0; i < 30; i++) login('XX', 'nope' + i, 'dev' + i);
-  assert.match(login('ANDI', 'tokoSembilan9', 'fresh').error, /Terlalu banyak/);
+  const sleeps = env.stats.sleeps;
+  assert.strictEqual(login('ANDI', 'tokoSembilan9', 'fresh').ok, true, 'a real worker can still log in');
+  assert.strictEqual(env.stats.sleeps, sleeps + 1, 'but it is slowed down');
+  env.cache.set('lf_all', '300');
+  assert.match(login('ANDI', 'tokoSembilan9', 'fresh2').error, /Terlalu banyak/);
   env.cache.clear();
 });
 test('tokens: bad/missing/forged → AUTH; unknown action rejected', () => {
@@ -311,6 +315,71 @@ test('changing a password or "Keluarkan semua HP" logs every phone out', () => {
   assert.ok(call({ action: 'boot', token: t }).ok);
   bumpEpoch_();
   assert.strictEqual(call({ action: 'boot', token: t }).code, 'AUTH');
+});
+
+// ── regressions for bugs found by the QA bug hunt (qa-bug-hunt/bug-report-20261102-150930-catat999.md) ──
+test('bug #1/#7: logging out never ends someone else\'s session; "last used" lands on the right row', () => {
+  env.cache.clear();
+  const a = login('ANI', 'passwordBaru2', 'p-a').token, b = login('BUDI', 'passwordBaru2', 'p-b').token, c = login('CITRA', 'passwordBaru2', 'p-c').token;
+  assert.ok(call({ action: 'logout', token: a }).ok);
+  assert.ok(call({ action: 'logout', token: c }).ok);
+  assert.strictEqual(call({ action: 'boot', token: b }).ok, true, 'Budi stays logged in');
+  assert.strictEqual(call({ action: 'boot', token: c }).code, 'AUTH', 'Citra is logged out');
+  const ses = env.ss.getSheetByName('Sesi'), hb = sha256_(b);
+  const row = ses.dump().findIndex(r => r[0] === hb);
+  ses.cells[row][4] = new Date(Date.now() - 2 * 3600e3);
+  call({ action: 'boot', token: b });
+  assert.ok(Date.now() - ses.dump()[row][4].getTime() < 60000, 'Budi\'s own "Terakhir Dipakai" refreshed');
+});
+test('bug #6: a tab Ibu made with a month-like name is renamed "(lama)", never wiped', () => {
+  const name = monthName(today.slice(0, 7)).replace(/^(\w+)/, m => m) ; // e.g. "NOV 2026"
+  const tabName = BULAN[Number(today.slice(5, 7)) - 1] + ' ' + today.slice(0, 4);
+  const existing = env.ss.getSheetByName(tabName); if (existing) env.ss.deleteSheet(existing);
+  const own = env.ss.insertSheet(tabName, 0);
+  own.getRange(1, 1, 1, 2).setValues([['Catatan Ibu', 123]]);
+  env.cache.clear();
+  const t = login('ANI', 'passwordBaru2', 'p-tab').token;
+  assert.ok(call({ action: 'add', token: t, entry: entry({ amount: 4321 }) }).ok);
+  assert.strictEqual(env.ss.getSheetByName(tabName + ' (lama)').getRange(1, 1).getValue(), 'Catatan Ibu');
+  assert.ok(String(env.ss.getSheetByName(tabName).getRange(1, 1).getValue()).startsWith('999 MART'));
+  assert.ok(logRows().some(r => r[2] === 'Tab dipindah'));
+  void name;
+});
+test('bug #8: a row pasted as a copy in Data gets its own new ID (the original keeps its ID)', () => {
+  env.cache.clear();
+  const t = login('ANI', 'passwordBaru2', 'p-copy').token;
+  const e = entry({ amount: 5555 }); assert.ok(call({ action: 'add', token: t, entry: e }).ok);
+  const data = env.ss.getSheetByName('Data'), src = data.dump().findIndex(r => r[C.ID] === e.id);
+  const copy = data.dump()[src].slice(); copy[C.AMT] = 6666;
+  const at = data.getLastRow() + 1; data.cells[at - 1] = copy;
+  onDataEdit({ range: data.getRange(at, 1, 1, 12) });
+  const ids = data.dump().slice(1).map(r => r[C.ID]).filter(Boolean);
+  assert.strictEqual(new Set(ids).size, ids.length, 'all IDs unique');
+  assert.strictEqual(data.dump()[src][C.ID], e.id, 'original keeps its ID');
+  assert.strictEqual(data.dump()[at - 1][C.BY], 'MANUAL');
+});
+test('bug #9: fixing the amount of an entry whose (unchanged) date is now >60 days back is allowed', () => {
+  env.cache.clear();
+  const t = login('ANI', 'passwordBaru2', 'p-old').token;
+  const e = entry({ date: daysAgo(60), amount: 7777 }); assert.ok(call({ action: 'add', token: t, entry: e }).ok);
+  const data = env.ss.getSheetByName('Data'), i = data.dump().findIndex(r => r[C.ID] === e.id);
+  data.cells[i][C.DATE] = toDate_(daysAgo(62));                      // as if two days have passed
+  const r = call({ action: 'update', token: t, id: e.id, entry: Object.assign({}, e, { date: daysAgo(62), amount: 7778 }) });
+  assert.ok(r.ok, r.error);
+  const moved = call({ action: 'update', token: t, id: e.id, entry: Object.assign({}, e, { date: daysAgo(63), amount: 7778 }) });
+  assert.match(moved.error, /terlalu lama/, 'changing the date to an older one is still refused');
+});
+test('bug #10: manual rows — only the cells the script fills are written back (typed text is never re-written)', () => {
+  const data = env.ss.getSheetByName('Data');
+  const at = data.getLastRow() + 1;
+  data.cells[at - 1] = ['05/' + today.slice(5, 7) + '/' + today.slice(0, 4), 'ROKOK', '', 'Rp 12.000', 'Modal', '', "'+6281234", '', '', '', '', ''];
+  const before = data.writes.length;
+  onDataEdit({ range: data.getRange(at, 1, 1, 7) });
+  const writes = data.writes.slice(before).filter(w => w[0] === at);
+  const cols = []; writes.forEach(([, c, , nc]) => { for (let k = 0; k < nc; k++) cols.push(c + k); });
+  assert.ok(!cols.includes(C.NOTE + 1), 'note cell not re-written');
+  assert.ok(cols.includes(C.ID + 1) && cols.includes(C.DATE + 1) && cols.includes(C.AMT + 1));
+  assert.strictEqual(data.dump()[at - 1][C.AMT], 12000);
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ', SOME FAILED' : ''}`);

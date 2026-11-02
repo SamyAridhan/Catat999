@@ -1,5 +1,5 @@
 /** Starting supplier list: one spelling per supplier, from the 999 Mart ledgers 2025–2026.
- * Only used by setup() when the Pemasok sheet is empty. Edit the Pemasok sheet afterwards, not this file. */
+ * Only used by setup() when the Supplier tab is empty. Edit the Supplier tab afterwards, not this file. */
 var SEED_SUPPLIERS = [
   ["PT. YAFINDO MITRA PERMATA", "PT"],
   ["PT. SAMPURNA SUKSES ABADI", "PT"],

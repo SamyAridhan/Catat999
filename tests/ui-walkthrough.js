@@ -63,6 +63,7 @@ async function checks(page) {
       await page.waitForTimeout(450);
       const file = `${tag}-${String(++n).padStart(2, '0')}-${name}.png`;
       await page.screenshot({ path: path.join(OUT, file), fullPage: full });
+      if (process.env.SAVE_HTML) fs.writeFileSync(path.join(OUT, file.replace(/\.png$/, '.html')), await page.content());
       const found = await checks(page);
       await page.evaluate(AXE);
       const axe = await page.evaluate(async () => {
@@ -172,7 +173,7 @@ async function checks(page) {
     await snap('done-edit');
     await tap('Kembali ke Riwayat'); await page.waitForSelector('#hlist .item.tap');
     await page.locator('#hlist .item.tap').first().click(); await page.waitForSelector('#ov');
-    await tap('Hapus', '#ov'); await page.waitForSelector('#ov h3');
+    await tap('Hapus', '#ov'); await page.waitForSelector('#ov h2');
     await snap('delete-sheet');
     await tap('Batal', '#ov');
     for (let i = 0; i < 2; i++) {
