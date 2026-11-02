@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "command",
   "commandRunner": {
-    "command": "cd tests && export CODE_FILE=../mutation-src/Code.js TZ=Asia/Jakarta && node backend.test.js && node backend.edge.test.js && node backend.snapshot.test.js && FC_RUNS=60 FC_SEED=42 node backend.property.test.js"
+    "command": "cd tests && export CODE_FILE=../mutation-src/Code.js TZ=Asia/Jakarta && node backend.test.js && node backend.edge.test.js && node backend.sheet.test.js && node backend.snapshot.test.js && FC_RUNS=60 FC_SEED=42 node backend.property.test.js"
   },
   "mutate": [
     "mutation-src/Code.js"
