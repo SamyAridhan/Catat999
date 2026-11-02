@@ -150,6 +150,13 @@ const ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
     eq([S.form.mode, S.form.paidFrom, S.form.other], ['edit', 'Lainnya', 'MUDA'], 'edit form splits Lainnya');
     eq(A.formDirty(), false, 'unchanged edit form is not dirty');
     S.form.amount = 6000; eq(A.formDirty(), true, 'changed edit form is dirty');
+    const old = { id: 'o1', date: A.addDays(t, -70), name: 'ROKOK', invoice: '', amount: 5000, paidFrom: 'Modal', note: '' };
+    S.form = A.newForm(old); S.form.amount = 5100; A.validate();
+    eq(S.form.errors.date, undefined, 'edit: an unchanged old date is allowed (same as server)');
+    S.form.date = A.addDays(t, -71); A.validate();
+    eq(S.form.errors.date, 'Terlalu lama. Minta Ibu untuk mencatat.', 'edit: moving to an even older date is refused');
+    S.form = A.newForm(Object.assign({}, old, { paidFrom: 'Cash' })); A.validate();
+    eq([S.form.paidFrom, S.form.errors.paidFrom], ['', 'Wajib diisi.'], 'edit: unknown hand-typed pay source must be picked again');
     S.form = null;
 
     // ── history cache ──

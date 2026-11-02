@@ -311,7 +311,9 @@
     var f = { mode: 'new', id: '', name: '', isNew: false, invoice: '', amount: 0, paidFrom: '', other: '', date: today(), note: '', q: '', errors: {}, orig: null };
     if (src) {
       var m = /^Lainnya: (.*)$/.exec(src.paidFrom || '');
-      Object.assign(f, { mode: 'edit', id: src.id, name: src.name, invoice: src.invoice || '', amount: src.amount, paidFrom: m ? 'Lainnya' : src.paidFrom,
+      // a pay source typed by hand in the Sheet (e.g. "Cash") isn't one of the buttons: ask again instead of failing at the server
+      var known = m || PAY.indexOf(src.paidFrom) >= 0;
+      Object.assign(f, { mode: 'edit', id: src.id, name: src.name, invoice: src.invoice || '', amount: src.amount, paidFrom: m ? 'Lainnya' : known ? src.paidFrom : '',
         other: m ? m[1] : '', date: src.date, note: src.note || '', orig: src });
     }
     return f;
@@ -387,7 +389,7 @@
     if (!f.paidFrom) e.paidFrom = 'Wajib diisi.';
     else if (f.paidFrom === 'Lainnya' && !/^[A-Z][A-Z .'\-]{0,29}$/.test(f.other)) e.paidFrom = 'Tulis uang siapa (huruf saja).';
     if (f.date > t) e.date = 'Tidak boleh lebih dari hari ini.';
-    else if (f.date < addDays(t, -backDays())) e.date = 'Terlalu lama. Minta Ibu untuk mencatat.';
+    else if (f.date < addDays(t, -backDays()) && !(f.mode === 'edit' && f.orig && f.date === f.orig.date)) e.date = 'Terlalu lama. Minta Ibu untuk mencatat.';   // same rule as the server: an unchanged date is fine
     f.errors = e;
     return !Object.keys(e).length;
   }
@@ -427,7 +429,7 @@
     req.then(function (r) {
       S.busy = false;
       if (authFail(r)) return;
-      if (r.ok) { saved(en, false); return; }
+      if (r.ok) { saved(r.entry ? Object.assign({}, en, r.entry) : en, false); return; }   // show what the server actually stored (cleaned name etc.)
       unBusy('#saveBtn', f.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan');
       if (r.code === 'DUP_INVOICE' || r.code === 'DUP_SIMILAR') { dupSheet(r, function () { doSave(true); }); return; }
       toast(r.error || 'Gagal menyimpan.', 'err');
