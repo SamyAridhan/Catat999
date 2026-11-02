@@ -7,7 +7,7 @@
     "test:ui": "node tests/ui.test.js",
     "mutate:backend": "mkdir -p mutation-src && cp apps-script/Code.gs mutation-src/Code.js && stryker run stryker.backend.json",
     "mutate:app": "stryker run stryker.app.json",
-    "test": "npm run test:backend && node tests/app-logic.test.js && node tests/ui.test.js && node tests/ui-regressions.test.js && node tests/ui-keyboard.test.js",
+    "test": "npm run test:backend && node tests/app-logic.test.js && node tests/ui.test.js && node tests/ui-regressions.test.js && node tests/ui-keyboard.test.js && node tests/e2e-real-backend.test.js",
     "test:walkthrough": "node tests/ui-walkthrough.js reports/walkthrough"
   },
   "devDependencies": {

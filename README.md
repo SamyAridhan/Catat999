@@ -113,6 +113,7 @@ npm run test:backend                     # Code.gs on an in-memory Sheet: exampl
                                          # random properties, demo-vs-real contract
 node tests/contract.test.js               # demo mode answers exactly like the real backend (so app tests mean something)
 node tests/app-logic.test.js             # the app's own logic in a real browser (amount in words, search, validation, cache)
+node tests/e2e-real-backend.test.js      # the real app (not demo) against the real Code.gs: save, offline, edit, delete
 node tests/ui.test.js /tmp/shots         # click-through on a phone (360×740) and a laptop (1366×768)
 node tests/ui-regressions.test.js        # bugs found by the QA hunt stay fixed
 node tests/ui-keyboard.test.js           # keyboard-only use (Tab / Enter / Escape, dialogs keep focus)

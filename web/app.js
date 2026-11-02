@@ -132,9 +132,14 @@
     return fetch(CFG.API_URL, {
       method: 'POST', redirect: 'follow', credentials: 'omit', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined,
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body)
-    }).then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); },
-      function () { clearTimeout(timer); var err = new Error('NETWORK'); err.network = true; throw err; });
+    }).then(function (r) {
+      clearTimeout(timer);
+      // a Google login page or an error page instead of data = the app is not connected to the script properly
+      if (!r.ok) { var he = new Error('SERVER'); he.server = true; throw he; }
+      return r.json().catch(function () { var je = new Error('SERVER'); je.server = true; throw je; });
+    }, function () { clearTimeout(timer); var err = new Error('NETWORK'); err.network = true; throw err; });
   }
+  var SERVER_MSG = 'Server tidak menjawab dengan benar. Coba lagi nanti; kalau terus begini, kabari Ibu.';
   function isNet(e) { return e && (e.network || e.message === 'NETWORK'); }
   function authFail(res) {
     if (res && res.code === 'AUTH') {
@@ -278,7 +283,7 @@
       S.names = [r.name].concat(S.names.filter(function (n) { return n !== r.name; })).slice(0, 5); save('names', S.names);
       go('home', true); toast('Selamat datang, ' + r.name, 'ok');
       refresh(true).then(flush);
-    }, function () { unBusy('#loginBtn', 'Masuk'); err.textContent = 'Tidak ada koneksi internet. Coba lagi.'; });
+    }, function (e) { unBusy('#loginBtn', 'Masuk'); err.textContent = e && e.server ? SERVER_MSG : 'Tidak ada koneksi internet. Coba lagi.'; });
   }
 
   // ── home ──
@@ -427,12 +432,12 @@
       toast(r.error || 'Gagal menyimpan.', 'err');
     }, function (e) {
       S.busy = false;
-      if (f.mode === 'new' && isNet(e)) {
+      if (f.mode === 'new' && (isNet(e) || (e && e.server))) {   // keep it on the phone and retry (same id → never saved twice)
         S.queue.push({ qid: uid(), state: 'waiting', entry: en, force: !!force, token: S.token, by: S.user ? S.user.name : '' }); persistQueue();
         saved(en, true); return;
       }
       unBusy('#saveBtn', f.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan');
-      toast(isNet(e) ? 'Tidak ada koneksi internet. Coba lagi nanti.' : 'Gagal menyimpan. Coba lagi.', 'err');
+      toast(isNet(e) ? 'Tidak ada koneksi internet. Coba lagi nanti.' : e && e.server ? SERVER_MSG : 'Gagal menyimpan. Coba lagi.', 'err');
     });
   }
   function saved(en, offline) {
@@ -449,7 +454,7 @@
     var l = lastSaved || { entry: {} }, en = l.entry;
     var title = l.offline ? 'Belum terkirim' : l.edit ? 'Perubahan disimpan' : 'Berhasil disimpan';
     return bar(title) + '<div class="done"><div class="ok ' + (l.offline ? 'wait' : '') + '">' + (l.offline ? '⏳' : '✓') + '</div><h2>' + esc(title) + '</h2>' +
-      '<p class="hint big">' + (l.offline ? 'Tidak ada koneksi internet. Transaksi tersimpan di HP dan akan dikirim otomatis saat ada sinyal.' : 'Sudah masuk ke spreadsheet.') + '</p>' +
+      '<p class="hint big">' + (l.offline ? 'Belum masuk ke spreadsheet (tidak ada internet atau server sedang gangguan). Transaksi tersimpan di HP dan akan dikirim otomatis.' : 'Sudah masuk ke spreadsheet.') + '</p>' +
       '<div class="card left"><b>' + esc(en.name) + '</b><div class="meta">' + rp(en.amount) + ' · ' + esc(en.paidFrom) + ' · ' + esc(shortDate(en.date || today())) + '</div></div></div>' +
       (l.edit ? '<div class="stack"><button class="btn primary" data-act="history" data-v="keep">Kembali ke Riwayat</button><button class="btn outline" data-act="home">Ke Beranda</button></div>'
         : '<div class="stack"><button class="btn primary" data-act="new"><span class="plus-s">+</span> Catat Lagi</button><button class="btn outline" data-act="home">Ke Beranda</button></div>');
