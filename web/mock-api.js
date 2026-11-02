@@ -31,7 +31,7 @@
     // a few sample rows so Riwayat is not empty on first open
     var t = today(), sup = suppliers(), ago = function (days, h) { return wib(new Date(Date.now() - days * 86400e3 - (h || 0) * 3600e3)).slice(0, 19); };
     d = [
-      { id: 'demo1', date: t, name: sup[0] || 'PT. CONTOH', invoice: '0012345', amount: 1776424, paidFrom: 'Transfer Ibu', by: 'BUJANG', note: '', at: ago(0, 1), editedBy: '', editedAt: '', status: 'AKTIF' },
+      { id: 'demo1', date: t, name: sup[0] || 'PT. CONTOH', invoice: '0012345', amount: 1776424, paidFrom: 'Transfer Ibu', by: 'BUJANG', note: '', at: ago(0, 0.02), editedBy: '', editedAt: '', status: 'AKTIF' },
       { id: 'demo2', date: addDays(t, -1), name: 'ROKOK', invoice: '', amount: 350000, paidFrom: 'Uang Kasir', by: 'MUDA', note: '', at: ago(1), editedBy: '', editedAt: '', status: 'AKTIF' },
       { id: 'demo3', date: addDays(t, -5), name: sup[1] || 'PT. CONTOH DUA', invoice: 'INV/2210', amount: 2450000, paidFrom: 'Transfer Ibu', by: 'BUJANG', note: 'retur 2 dus', at: ago(5), editedBy: '', editedAt: '', status: 'AKTIF' }
     ];
