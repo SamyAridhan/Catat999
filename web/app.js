@@ -812,6 +812,6 @@
     render: render, collect: collect, renderSugg: renderSugg, toast: toast, uid: uid, shiftNow: shiftNow, daysBetween: daysBetween,
     phoneToday: phoneToday, isAdmin: isAdmin, editDays: editDays, backDays: backDays, loadMonth: loadMonth, findEntry: findEntry,
     curMonth: curMonth, outdated: outdated, step: step,
-    api: api, refresh: refresh, flush: flush, endLaterSessions: endLaterSessions, authFail: authFail, SERVER_MSG: SERVER_MSG
+    api: api, refresh: refresh, flush: flush, doSave: doSave, endLaterSessions: endLaterSessions, authFail: authFail, SERVER_MSG: SERVER_MSG
   };
 })();

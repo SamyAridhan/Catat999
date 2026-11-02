@@ -242,6 +242,113 @@ S.queue = [];
     window.CatatMockApi.handle = real;
     return out;
   }));
+  // ── saving from the review screen (doSave / saved) ──
+  results.push(...await page.evaluate(async () => {
+    const A = window.CatatApp, S = A.state, out = [];
+    const eq = (got, want, msg) => out.push([JSON.stringify(got) === JSON.stringify(want), msg, got, want]);
+    const real = window.CatatMockApi.handle;
+    let calls = [], replies = {};
+    window.CatatMockApi.handle = b => {
+      calls.push(JSON.parse(JSON.stringify(b)));
+      const q = replies[b.action];
+      if (q && q.length) { const r = q.shift(); return r instanceof Error ? Promise.reject(r) : Promise.resolve(typeof r === 'function' ? r(b) : r); }
+      return real(b);
+    };
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const toastText = () => { const t = document.querySelector('#toast'); return t && /show/.test(t.className) ? t.textContent : ''; };
+    const btn = () => document.querySelector('#saveBtn');
+    const today = A.today(), ym = today.slice(0, 7), ME = S.user.name;
+    const NAME = 'TOKO UJI SIMPAN';
+    const review = (extra) => {
+      S.form = Object.assign(A.newForm(), { name: NAME, amount: 25000, paidFrom: 'Modal', date: today }, extra || {});
+      S.screen = 'review'; A.render();
+    };
+    const start = () => { calls = []; replies = {}; S.queue = []; S.busy = false; };
+    const run = async () => { A.doSave(); await wait(400); };
+    const sends = () => calls.filter(c => c.action === 'add' || c.action === 'update');
+    delete S.usage[NAME];
+
+    // new entry, saved
+    start(); review(); replies.add = [b => ({ ok: true, entry: { name: 'TOKO UJI SIMPAN (BERSIH)' } })];
+    S.hist[ym] = { entries: [], total: 0, at: Date.now() };
+    await run();
+    const sent = sends()[0];
+    eq([sent.action, /^e[0-9a-z]{9,16}$/.test(sent.entry.id), sent.force, sent.entry.name, sent.entry.amount], ['add', true, false, NAME, 25000], 'save: new entry sent as "add" with a fresh ID, force=false');
+    eq([S.screen, S.form, S.busy], ['done', null, false], 'save: done screen, form cleared, not busy');
+    eq(document.querySelector('.done h2').textContent, 'Berhasil disimpan', 'save: "Berhasil disimpan"');
+    eq(document.querySelector('.done').textContent.includes('TOKO UJI SIMPAN (BERSIH)'), true, 'save: done screen shows what the server stored');
+    eq([S.usage['TOKO UJI SIMPAN (BERSIH)'], JSON.parse(localStorage.getItem('c9demo.usage'))['TOKO UJI SIMPAN (BERSIH)']], [1, 1], 'save: supplier use counted under the stored name (and saved)');
+    eq(S.hist[ym].at, 0, 'save: that month\'s history marked out of date');
+    eq(calls.map(c => c.action).slice(0, 2), ['add', 'boot'], 'save: data refreshed afterwards');
+    start(); review(); replies.add = [{ ok: true }]; await run();
+    start(); review(); replies.add = [{ ok: true }]; await run();
+    eq(S.usage[NAME], 2, 'save: use count goes up');
+
+    // same ID kept when saving again (e.g. after a duplicate warning)
+    start(); review({ id: 'eKEEPID12345' }); replies.add = [{ ok: true }]; await run();
+    eq(sends()[0].entry.id, 'eKEEPID12345', 'save: an ID already given is kept');
+
+    // busy → ignored
+    start(); review(); S.busy = true; A.doSave(); await wait(200);
+    eq(sends().length, 0, 'save: a second tap while saving is ignored');
+    S.busy = false;
+
+    // edit, saved
+    const orig = { id: 'eEDIT1234567', date: today, name: 'ROKOK', invoice: '', amount: 1000, paidFrom: 'Modal', note: '' };
+    S.hist[ym] = { entries: [Object.assign({ canEdit: true, by: ME, at: new Date().toISOString() }, orig)], total: 1000, at: Date.now() };
+    S.month = '2020-01';
+    start(); review({ mode: 'edit', id: orig.id, orig: orig, name: 'ROKOK', amount: 2000 }); replies.update = [{ ok: true }]; await run();
+    eq([sends()[0].action, sends()[0].id, sends()[0].entry.amount, sends()[0].force], ['update', 'eEDIT1234567', 2000, false], 'edit: sent as "update" with the entry ID');
+    eq(document.querySelector('.done h2').textContent, 'Perubahan disimpan', 'edit: "Perubahan disimpan"');
+    eq(S.month, ym, 'edit: Riwayat will open on the edited entry\'s month');
+    eq(S.hist[ym].entries[0].amount, 2000, 'edit: the cached Riwayat shows the new amount');
+
+    // refused (not a duplicate)
+    start(); review(); replies.add = [{ ok: false, error: 'Nominal terlalu besar.' }]; await run();
+    eq([S.screen, toastText(), btn().textContent, btn().disabled, S.busy], ['review', 'Nominal terlalu besar.', 'Simpan', false, false], 'save refused: stays on review, shows why, button usable again');
+    start(); review(); replies.add = [{ ok: false }]; await run();
+    eq(toastText(), 'Gagal menyimpan.', 'save refused without a reason → "Gagal menyimpan."');
+    start(); review({ mode: 'edit', id: orig.id, orig: orig }); replies.update = [{ ok: false, error: 'x' }]; await run();
+    eq(btn().textContent, 'Simpan Perubahan', 'edit refused: button says "Simpan Perubahan" again');
+
+    // duplicate → warning; "tetap simpan" sends again with force
+    for (const code of ['DUP_INVOICE', 'DUP_SIMILAR']) {
+      start(); review(); replies.add = [{ ok: false, code: code, error: 'mirip', existing: { name: 'ROKOK', amount: 1000, date: today } }, { ok: true }];
+      await run();
+      eq([!!document.querySelector('#ov'), sends().length], [true, 1], code + ': warning shown, nothing saved yet');
+      document.querySelector('#ov button[data-v="force"]').click(); await wait(400);
+      eq([sends().length, sends()[1].force, sends()[1].entry.id === sends()[0].entry.id, S.screen], [2, true, true, 'done'], code + ': "tetap simpan" sends again with force and the same ID');
+    }
+    start(); review({ mode: 'edit', id: orig.id, orig: orig }); replies.update = [{ ok: false, code: 'DUP_SIMILAR', existing: orig }, { ok: true }]; await run();
+    document.querySelector('#ov button[data-v="force"]').click(); await wait(400);
+    eq([sends()[1].action, sends()[1].force], ['update', true], 'edit duplicate: forced update');
+
+    // offline / server trouble: new entries wait on the phone, edits don't
+    for (const [label, err] of [['no internet', Object.assign(new Error('NETWORK'), { network: true })], ['server trouble', Object.assign(new Error('SERVER'), { server: true })]]) {
+      start(); review(); replies.add = [err];
+      await run();
+      const q = S.queue[0] || {};
+      eq([S.queue.length, q.state, q.force, q.token, q.by, q.entry && q.entry.name, /^q?[0-9a-z]+$/i.test(q.qid || '')], [1, 'waiting', false, S.token, ME, NAME, true], 'save, ' + label + ': kept on the phone with the token and who recorded it');
+      eq(JSON.parse(localStorage.getItem('c9demo.queue')).length, 1, 'save, ' + label + ': the waiting entry is saved');
+      eq([S.screen, document.querySelector('.done h2').textContent], ['done', 'Belum terkirim'], 'save, ' + label + ': "Belum terkirim"');
+      eq(calls.filter(c => c.action === 'boot').length, 0, 'save, ' + label + ': no refresh attempted');
+    }
+    start(); review(); replies.add = [{ ok: false, code: 'DUP_INVOICE', existing: {} }, Object.assign(new Error('NETWORK'), { network: true })]; await run();
+    document.querySelector('#ov button[data-v="force"]').click(); await wait(400);
+    eq(S.queue[0] && S.queue[0].force, true, 'save: a forced save that goes offline stays forced');
+    start(); review(); replies.add = [new Error('something else')]; await run();
+    eq([S.queue.length, S.screen, toastText(), btn().textContent], [0, 'review', 'Gagal menyimpan. Coba lagi.', 'Simpan'], 'save, unexpected error: not queued, user told to try again');
+    for (const [label, err, msg] of [['no internet', Object.assign(new Error('NETWORK'), { network: true }), 'Tidak ada koneksi internet. Coba lagi nanti.'], ['server trouble', Object.assign(new Error('SERVER'), { server: true }), A.SERVER_MSG]]) {
+      start(); review({ mode: 'edit', id: orig.id, orig: orig }); replies.update = [err]; await run();
+      eq([S.queue.length, S.screen, toastText(), btn().textContent], [0, 'review', msg, 'Simpan Perubahan'], 'edit, ' + label + ': not queued, clear message');
+    }
+
+    // session ended while saving
+    start(); review(); replies.add = [{ ok: false, code: 'AUTH' }]; await run();
+    eq([S.screen, S.token, !!S.form], ['login', '', true], 'save, session ended: back to login, form kept');
+    window.CatatMockApi.handle = real;
+    return out;
+  }));
   await ctx.close();
 
   // ── part 2: the real api() against a fake Google endpoint ──
