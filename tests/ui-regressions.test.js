@@ -39,7 +39,7 @@ async function quickEntry(page, amount) {
     await page.click('[data-act="home"]').catch(() => page.click('text=Ke Beranda'));
     await page.click('text=Kirim sekarang'); await page.waitForTimeout(1200);
     const q = await page.evaluate(() => window.CatatApp.state.queue.map(o => o.state));
-    const banner = (await page.locator('.banner.err').textContent().catch(() => '')) || '';
+    const banner = (await page.locator('.banner.err').count()) ? await page.locator('.banner.err').first().textContent() : '';
     
     check('F1 temporary server error keeps the entry waiting (auto-retry)', q[0] === 'waiting', `queue state = ${JSON.stringify(q)}; banner = "${banner.trim().slice(0, 60)}"`);
     await ctx.close();
