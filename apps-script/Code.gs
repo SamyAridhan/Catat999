@@ -166,10 +166,8 @@ function login_(name, password, device) {
   cache.remove(devKey);
   var token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '').toLowerCase();
   var now = new Date();
-  var sh = sheet_(SH.SES);
-  var r = sh.getLastRow() + 1;
-  ensureRows_(sh, r);
-  sh.getRange(r, 1, 1, SES_HEADERS.length).setValues([[sha256_(token), safeText_(nm), role, now, now, safeText_(dev), epoch_()]]);
+  // appendRow is atomic: two workers logging in at the same moment can't overwrite each other's session row
+  sheet_(SH.SES).appendRow([sha256_(token), safeText_(nm), role, now, now, safeText_(dev), epoch_()]);
   log_({ name: nm, device: dev }, role === 'ADMIN' ? 'Masuk (admin)' : 'Masuk', null, '');
   return { ok: true, token: token, name: nm, role: role };
 }
