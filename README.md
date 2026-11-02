@@ -112,6 +112,7 @@ npm install                              # dev tools only (Stryker, fast-check, 
 npm run test:backend                     # Code.gs on an in-memory Sheet: examples, edge cases, hand edits, golden snapshot,
                                          # random properties, demo-vs-real contract
 node tests/contract.test.js               # demo mode answers exactly like the real backend (so app tests mean something)
+node tests/app-render.test.js            # what each screen is made of (fields, labels, buttons, waiting list, toasts)
 node tests/app-logic.test.js             # the app's own logic in a real browser (amount in words, search, validation, cache)
 node tests/e2e-real-backend.test.js      # the real app (not demo) against the real Code.gs: save, offline, edit, delete
 node tests/ui.test.js /tmp/shots         # click-through on a phone (360×740) and a laptop (1366×768)

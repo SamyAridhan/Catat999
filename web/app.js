@@ -808,6 +808,9 @@
     state: S, terbilang: terbilang, words: words, esc: esc, rp: rp, dots: dots, key: key, dice: dice, score: score, search: search,
     frequent: frequent, today: today, addDays: addDays, addMonths: addMonths, longDate: longDate, shortDate: shortDate, monthName: monthName,
     hhmm: hhmm, newForm: newForm, validate: validate, entryFromForm: entryFromForm, formDirty: formDirty, needLoad: needLoad,
-    patchCache: patchCache, histList: histList, pendList: pendList, isNet: isNet, trimHist: trimHist
+    patchCache: patchCache, histList: histList, pendList: pendList, isNet: isNet, trimHist: trimHist,
+    render: render, collect: collect, renderSugg: renderSugg, toast: toast, uid: uid, shiftNow: shiftNow, daysBetween: daysBetween,
+    phoneToday: phoneToday, isAdmin: isAdmin, editDays: editDays, backDays: backDays, loadMonth: loadMonth, findEntry: findEntry,
+    curMonth: curMonth, outdated: outdated, step: step
   };
 })();
