@@ -349,6 +349,37 @@ S.queue = [];
     window.CatatMockApi.handle = real;
     return out;
   }));
+  // ── double taps: login and delete happen once ──
+  results.push(...await page.evaluate(async () => {
+    const A = window.CatatApp, S = A.state, out = [];
+    const eq = (got, want, msg) => out.push([JSON.stringify(got) === JSON.stringify(want), msg, got, want]);
+    const real = window.CatatMockApi.handle, wait = ms => new Promise(r => setTimeout(r, ms));
+    const calls = [];
+    window.CatatMockApi.handle = b => { calls.push(b.action); return new Promise(r => setTimeout(r, 300)).then(() => real(b)); };
+    S.form = null; if (S.screen !== 'login') { S.token = ''; S.screen = 'login'; A.render(); }
+    document.querySelector('#lname').value = 'Budi'; document.querySelector('#lpw').value = 'toko12345';
+    const form = document.querySelector('#loginForm');
+    form.requestSubmit(); form.requestSubmit(); form.requestSubmit();
+    await wait(900);
+    eq(calls.filter(c => c === 'login').length, 1, 'login: Enter pressed three times → one login');
+    eq(S.screen, 'home', 'login: logged in');
+
+    const ym = A.today().slice(0, 7);
+    const e = { id: 'eDELTEST1234', date: A.today(), name: 'HAPUS UJI', invoice: '', amount: 1234, paidFrom: 'Modal', note: '', by: S.user.name, at: new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 19), canEdit: true };
+    S.hist[ym] = { entries: [e], total: 1234, at: Date.now() }; S.month = ym; S.screen = 'history'; A.render();
+    calls.length = 0;
+    document.querySelector('#hlist .item.tap').click(); await wait(50);
+    document.querySelector('#ov button[data-v="del"]').click(); await wait(50);
+    const bs = Array.from(document.querySelectorAll('#ov button'));
+    bs.find(b => b.getAttribute('data-v') === 'Salah input').click();
+    bs.find(b => b.getAttribute('data-v') === 'Tercatat dua kali').click();
+    bs.find(b => b.getAttribute('data-v') === 'Salah input').click();
+    await wait(900);
+    eq(calls.filter(c => c === 'remove').length, 1, 'delete: tapping reasons again while deleting → deleted once');
+    window.CatatMockApi.handle = real;
+    S.screen = 'home'; A.render();
+    return out;
+  }));
   await ctx.close();
 
   // ── part 2: the real api() against a fake Google endpoint ──

@@ -272,6 +272,7 @@
     return h;
   }
   function doLogin() {
+    if ($('#loginBtn').disabled) return;   // Enter pressed again while the first try is still on its way
     var name = $('#lname').value.trim(), pw = $('#lpw').value, err = $('#loginErr');
     if (!/^[A-Za-z][A-Za-z .'\-]{1,29}$/.test(name)) { err.textContent = 'Isi nama Anda (huruf saja).'; $('#lname').focus(); return; }
     if (!pw) { err.textContent = 'Isi kata sandi.'; $('#lpw').focus(); return; }
@@ -540,7 +541,7 @@
       if (authFail(r)) return;
       if (!r.ok) { failedAt[ym] = Date.now(); loadFailed(ym, r.error || 'Gagal memuat riwayat.'); return; }
       delete failedAt[ym];
-      S.hist[ym] = { entries: r.entries, total: r.total, at: Date.now() }; save('hist', trimHist());
+      S.hist[ym] = { entries: r.entries, total: r.total, at: Date.now() }; save('hist', trimHist(ym));
       redrawList(ym);
     }, function (e) { loading[ym] = false; failedAt[ym] = Date.now(); loadFailed(ym, e && e.server ? 'Server sedang gangguan.' : 'Tidak ada koneksi internet.'); });
   }
@@ -555,13 +556,18 @@
     var ym = orig.date.slice(0, 7), c = S.hist[ym]; if (!c || !c.entries) return;
     c.entries = c.entries.filter(function (x) { return x.id !== orig.id; });
     if (en && en.date.slice(0, 7) === ym) {
-      c.entries.push(Object.assign({}, orig, en, { editedBy: S.user ? S.user.name : '' }));
+      c.entries.push(Object.assign({}, orig, en, { editedBy: S.user ? S.user.name : '', editedAt: new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 19) }));
       c.entries.sort(function (x, y) { return x.date !== y.date ? (x.date < y.date ? 1 : -1) : (x.at < y.at ? 1 : -1); });
     }
     c.total = c.entries.reduce(function (s, x) { return s + x.amount; }, 0); c.at = 0;
     save('hist', S.hist);
   }
-  function trimHist() { var ks = Object.keys(S.hist).sort().reverse().slice(0, 3); var o = {}; ks.forEach(function (k) { o[k] = S.hist[k]; }); S.hist = o; return o; }
+  // keep at most 3 months on the phone: the one just loaded (it is on screen) plus the newest others
+  function trimHist(keep) {
+    var ks = Object.keys(S.hist).sort().reverse().filter(function (k) { return k !== keep; }).slice(0, keep && S.hist[keep] ? 2 : 3);
+    if (keep && S.hist[keep]) ks.push(keep);
+    var o = {}; ks.forEach(function (k) { o[k] = S.hist[k]; }); S.hist = o; return o;
+  }
   function findEntry(id) { var ym = S.month || today().slice(0, 7); return ((S.hist[ym] && S.hist[ym].entries) || []).filter(function (e) { return e.id === id; })[0]; }
 
   // ───────────── bottom sheets ─────────────
@@ -657,7 +663,8 @@
       '<div class="stack"><button class="btn outline" data-v="Salah input">Salah input</button><button class="btn outline" data-v="Tercatat dua kali">Tercatat dua kali</button>' +
       '<button class="btn outline" data-v="Lainnya">Lainnya</button><button class="btn ghost" data-v="">Batal</button></div>', function (b) {
         var reason = b.getAttribute('data-v'); if (!reason) { closeSheet(); return; }
-        b.disabled = true; b.innerHTML = '<span class="spin"></span> Menghapus…';
+        var all = b.parentNode.querySelectorAll('button'); for (var i = 0; i < all.length; i++) all[i].disabled = true;   // one delete, even with a shaky tap
+        b.innerHTML = '<span class="spin"></span> Menghapus…';
         api('remove', { id: e.id, reason: reason }).then(function (r) {
           closeSheet();
           if (authFail(r)) return;

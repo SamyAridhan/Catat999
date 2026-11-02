@@ -172,6 +172,8 @@ const ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
     A.patchCache(e2, Object.assign({}, e2, { date: '2026-05-04', amount: 70 }));
     eq(S.hist['2026-05'].entries.map(x => x.id + ':' + x.amount), ['x2:70', 'x1:100'], 'patchCache: edit re-sorts newest first');
     eq(S.hist['2026-05'].total, 170, 'patchCache: total recomputed');
+    const ea = S.hist['2026-05'].entries[0].editedAt, wibNow = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 16);
+    eq(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d$/.test(ea) && ea.slice(0, 16) === wibNow, true, 'patchCache: edited entry shows when it was changed (WIB, same format as the server)');
     eq(S.hist['2026-05'].at, 0, 'patchCache: marks month for refresh');
     A.patchCache(e1, null);
     eq(S.hist['2026-05'].entries.map(x => x.id), ['x2'], 'patchCache: delete removes it');
@@ -179,6 +181,12 @@ const ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
     eq(S.hist['2026-05'].entries.length, 0, 'patchCache: moved to another month leaves this one');
     S.hist = { '2026-01': {}, '2026-02': {}, '2026-03': {}, '2026-04': {} };
     eq(Object.keys(A.trimHist()).sort(), ['2026-02', '2026-03', '2026-04'], 'trimHist keeps newest 3 months');
+    S.hist = { '2026-01': { entries: [] }, '2026-02': {}, '2026-03': {}, '2026-04': {} };
+    eq(Object.keys(A.trimHist('2026-01')).sort(), ['2026-01', '2026-03', '2026-04'], 'trimHist keeps an older month that was just opened (no endless spinner)');
+    S.hist = { '2026-03': {}, '2026-04': { entries: [] } };
+    eq(Object.keys(A.trimHist('2026-04')).sort(), ['2026-03', '2026-04'], 'trimHist: nothing dropped when there are few months');
+    S.hist = { '2026-01': {}, '2026-02': {}, '2026-03': {}, '2026-04': {} };
+    eq(Object.keys(A.trimHist('2025-12')).sort(), ['2026-02', '2026-03', '2026-04'], 'trimHist: a month that is not there does not take a place');
 
     // ── history list rendering ──
     const rows = [
