@@ -204,6 +204,74 @@ const ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
     A.patchCache({ id: 'zz', date: '1999-02-01' }, null); eq(S.hist['1999-02'], undefined, 'patchCache: month not cached → nothing');
     A.patchCache({ id: 'a', date: '2026-01-05', at: '1', amount: 5 }, { id: 'a', date: '2026-01-06', amount: 7, name: 'N' });
     eq([S.hist['2026-01'].entries[0].amount, S.hist['2026-01'].entries[0].editedBy, S.hist['2026-01'].total], [7, 'TESTER', 7], 'patchCache: edit shows new values and who changed it');
+
+    // ── precise rules (from mutation survivors) ──
+    eq([A.dice('', ''), A.dice('', 'AB'), A.dice('AB', ''), A.dice('A', 'AB'), A.dice('AB', 'A'), A.dice('AB', 'AB')], [1, 0, 0, 0, 0, 1], 'dice: short and empty inputs');
+    eq(A.score('mitra', 'PT. YAFINDO MITRA PERMATA'), 0.9, 'score: later word prefix');
+    eq(A.score('pt mitra', 'PT. YAFINDO MITRA PERMATA'), 0.9, 'score: PT in the query is ignored');
+    eq(A.score('afind', 'PT. YAFINDO MITRA PERMATA'), 0.8, 'score: inside a word');
+    eq(A.score('yafindx', 'PT. YAFINDO MITRA PERMATA') > 0.35 && A.score('yafindx', 'PT. YAFINDO MITRA PERMATA') < 0.8, true, 'score: near miss found but ranked lower');
+    eq(A.score('yafinod', 'PT. YAFINDO MITRA PERMATA') > A.score('yafinod', 'PT. OMEGA SUKSES ABADI'), true, 'score: typo prefers the right supplier');
+    const keep = S.boot.suppliers; S.boot.suppliers = ['AA ONE', 'AA TWO', 'BB']; S.usage = { 'AA TWO': 2 };
+    eq(A.search('aa'), ['AA TWO', 'AA ONE'], 'search: equal score → more used first');
+    S.usage = {}; eq(A.search('aa'), ['AA ONE', 'AA TWO'], 'search: equal score, equal use → list order');
+    S.boot.suppliers = keep;
+    const nf = A.newForm();
+    eq([nf.mode, nf.id, nf.name, nf.isNew, nf.invoice, nf.amount, nf.paidFrom, nf.other, nf.note, nf.q, nf.orig], ['new', '', '', false, '', 0, '', '', '', '', null], 'newForm: clean defaults');
+    const ef = A.newForm({ id: 'e1', date: t, name: 'X', amount: 1, paidFrom: 'Transfer Ibu' });
+    eq([ef.paidFrom, ef.note, ef.invoice, ef.other], ['Transfer Ibu', '', '', ''], 'newForm edit: known source kept, missing note/invoice empty');
+    eq(A.newForm({ id: 'e2', date: t, name: 'X', amount: 1, paidFrom: 'xLainnya: BUDI' }).paidFrom, '', 'newForm edit: only a real "Lainnya: " prefix');
+    eq(A.newForm({ id: 'e3', date: t, name: 'X', amount: 1, paidFrom: 'Lainnya: BUDI' }).other, 'BUDI', 'newForm edit: Lainnya name');
+    S.form = null; eq(A.formDirty(), false, 'formDirty: no form');
+    for (const k of ['name', 'amount', 'invoice', 'note', 'q']) { S.form = A.newForm(); S.form[k] = k === 'amount' ? 5 : 'x'; eq(A.formDirty(), true, 'formDirty: typed ' + k); }
+    S.form = A.newForm(); S.form.paidFrom = 'Modal'; eq(A.formDirty(), false, 'formDirty: only a button tapped is not worth asking about');
+    const vf = o => { S.form = Object.assign(A.newForm(), { name: 'X', amount: 1, paidFrom: 'Modal' }, o); return [A.validate(), S.form.errors]; };
+    eq(vf({})[0], true, 'validate: returns true when fine');
+    eq(vf({ amount: 0 })[0], false, 'validate: returns false on error');
+    eq(vf({ name: '', q: '  ' })[1].name, 'Wajib diisi.', 'validate: spaces only = nothing typed');
+    S.boot.limits = Object.assign({}, S.boot.limits, { maxAmount: 1000 });
+    eq(vf({ amount: 1001 })[1].amount, 'Nominal terlalu besar. Cek lagi.', 'validate: server max amount used');
+    eq(vf({ amount: 1000 })[1].amount, undefined, 'validate: exactly the max is fine');
+    S.boot.limits.maxAmount = 500000000;
+    eq(vf({ paidFrom: 'Lainnya', other: 'B9' })[1].paidFrom, 'Tulis uang siapa (huruf saja).', 'validate: digits not allowed in the name');
+    eq(vf({ paidFrom: 'Lainnya', other: "O'NEIL-X J." })[1].paidFrom, undefined, 'validate: apostrophe, dash, dot, space allowed');
+    const oldD = A.addDays(t, -90);
+    S.form = Object.assign(A.newForm({ id: 'o', date: oldD, name: 'X', amount: 1, paidFrom: 'Modal' }), {}); S.form.mode = 'new'; S.form.orig = null; A.validate();
+    eq(S.form.errors.date, 'Terlalu lama. Minta Ibu untuk mencatat.', 'validate: the old-date exception is only for editing');
+    S.form = A.newForm({ id: 'o', date: oldD, name: 'X', amount: 1, paidFrom: 'Modal' }); S.form.orig = Object.assign({}, S.form.orig, { date: A.addDays(t, -91) }); A.validate();
+    eq(S.form.errors.date, 'Terlalu lama. Minta Ibu untuk mencatat.', 'validate: … and only when the date is unchanged');
+    S.form = null;
+    // history cache: in-flight and recent-failure guards, 60 s freshness
+    S.hist = { '2002-01': { entries: [], at: Date.now() - 59000 } };
+    eq(A.needLoad('2002-01'), false, 'needLoad: 59 s old is fresh');
+    S.hist['2002-01'].at = Date.now() - 61000; eq(A.needLoad('2002-01'), true, 'needLoad: 61 s old is reloaded');
+    S.hist['2002-01'].at = 0;
+    const real2 = window.CatatMockApi.handle;
+    window.CatatMockApi.handle = b => b.action === 'list' ? new Promise(() => { }) : real2(b);
+    A.loadMonth('2002-01'); eq(A.needLoad('2002-01'), false, 'needLoad: not while a load is running');
+    window.CatatMockApi.handle = b => b.action === 'list' ? Promise.reject(Object.assign(new Error('NETWORK'), { network: true })) : real2(b);
+    A.loadMonth('2002-02'); await new Promise(r => setTimeout(r, 30));
+    eq(A.needLoad('2002-02'), false, 'needLoad: not again within 15 s of a failure');
+    window.CatatMockApi.handle = b => b.action === 'list' ? Promise.reject(Object.assign(new Error('SERVER'), { server: true })) : real2(b);
+    A.loadMonth('2002-03'); await new Promise(r => setTimeout(r, 30));
+    eq(S.hist['2002-03'], { failed: 'Server sedang gangguan.' }, 'loadMonth: server trouble is not called "no internet"');
+    window.CatatMockApi.handle = b => b.action === 'list' ? Promise.resolve({ ok: false }) : real2(b);
+    A.loadMonth('2002-04'); await new Promise(r => setTimeout(r, 30));
+    eq(S.hist['2002-04'], { failed: 'Gagal memuat riwayat.' }, 'loadMonth: refusal without a message');
+    window.CatatMockApi.handle = real2;
+    // patchCache keeps newest-first order by date, then by time recorded
+    S.hist = { '2026-02': { entries: [
+      { id: 'a', date: '2026-02-03', at: '2026-02-03T09:00:00', amount: 1 }, { id: 'b', date: '2026-02-03', at: '2026-02-03T08:00:00', amount: 2 },
+      { id: 'c', date: '2026-02-01', at: '2026-02-01T10:00:00', amount: 3 }], total: 6, at: 5 } };
+    A.patchCache({ id: 'c', date: '2026-02-01', at: '2026-02-03T08:30:00', amount: 3 }, { id: 'c', date: '2026-02-03', amount: 4 });
+    eq(S.hist['2026-02'].entries.map(e => e.id), ['a', 'c', 'b'], 'patchCache: re-sorted by date then time recorded');
+    eq(JSON.parse(localStorage.getItem('c9demo.hist'))['2026-02'].total, 7, 'patchCache: saved on the phone');
+    A.patchCache({ id: 'a', date: '2026-02-03', at: '2026-02-03T09:00:00', amount: 1 }, { id: 'a', date: '2026-02-04', amount: 1 });
+    eq(S.hist['2026-02'].entries.map(e => e.id), ['a', 'c', 'b'], 'patchCache: newer date goes first');
+    // clock correction boundaries
+    S.clock = { shift: 1, at: Date.now() }; eq(A.shiftNow(), 1, 'shiftNow: learned just now');
+    S.clock = { shift: 1, at: Date.now() - 12 * 3600e3 }; eq(A.shiftNow(), 0, 'shiftNow: exactly 12 h is stale');
+    S.clock = null;
     return out.map(([pass, msg, got, want]) => ({ pass, msg, got, want }));
   }));
   await ctx.close();
