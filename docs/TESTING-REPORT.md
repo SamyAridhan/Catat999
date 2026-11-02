@@ -15,6 +15,9 @@ What was checked before release, what was found, and what was fixed. Every bug i
 | Screen walkthrough | `tests/ui-walkthrough.js` | Every screen at 320 / 360 / 412 px and on a laptop: overflow, cut-off text, tap-target size, axe-core accessibility, screenshots |
 | Keyboard | `tests/ui-keyboard.test.js` (12) | Ibu on a laptop with keyboard only: Tab / Enter / Escape, dialogs keep focus |
 | Regressions | `tests/ui-regressions.test.js` (5) | The app bugs found below stay fixed |
+| Hand edits | `tests/backend.sheet.test.js` (20) | Ibu editing the Sheet: pasted rows, typed dates/amounts, moved months, who edited, tab rebuilding |
+| Demo = real | `tests/contract.test.js` (51) | Demo mode answers exactly like the real backend, so app tests mean something |
+| End-to-end | `tests/e2e-real-backend.test.js` (22) | The real app (not demo) against the real backend code: save, duplicate, offline, server hiccup, edit, delete |
 | Monkey | `tests/ui-monkey.js` | A "random user" taps, types junk, presses back and switches the internet on and off, with sanity checks after every step. 1,800+ steps per run. |
 | Mutation testing | Stryker (`npm run mutate:backend` / `mutate:app`) | Plants deliberate small bugs in the code and checks whether the tests notice |
 
@@ -44,6 +47,18 @@ What was checked before release, what was found, and what was fixed. Every bug i
 - Editing an already-deleted entry showed the wrong message.
 - Dates and amounts typed as text in the Sheet stayed text.
 - Impossible dates like `31/02` were accepted when typed by hand.
+
+### Found by the contract and end-to-end tests
+- Demo mode accepted or refused different things than the real server:
+  - lower-case pay sources;
+  - `Lainnya : name`;
+  - impossible dates;
+  - an empty password;
+  - editing a deleted entry.
+
+  The app's demo-mode tests could therefore pass while real use behaved differently. Demo mode now uses the same rules.
+- If Google ever answered with an error or login page instead of data, the app said "no internet" and **dropped the new entry**. It now keeps the entry and retries (same ID, so it's never saved twice), with a clear message.
+- A test depended on the time of day (it failed just after midnight). The demo data was fixed.
 
 ### Found by the code review (two independent reviewers)
 - A deferred logout never finished if the waiting entry was thrown away.
