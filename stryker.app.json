@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "command",
   "commandRunner": {
-    "command": "node tests/app-logic.test.js && NO_SHOTS=1 node tests/ui.test.js && node tests/ui-regressions.test.js && node tests/ui-keyboard.test.js"
+    "command": "node tests/app-logic.test.js && NO_SHOTS=1 node tests/ui.test.js && node tests/ui-regressions.test.js && node tests/ui-keyboard.test.js && TZ=Asia/Jakarta node tests/e2e-real-backend.test.js"
   },
   "mutate": [
     "web/app.js"
@@ -11,8 +11,7 @@
     "docs",
     "*.zip",
     "reports",
-    "mutation-src",
-    "apps-script"
+    "mutation-src"
   ],
   "coverageAnalysis": "off",
   "concurrency": 2,
