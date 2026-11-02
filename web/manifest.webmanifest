@@ -1,13 +1,13 @@
 {
   "name": "Catat 999",
   "short_name": "Catat 999",
-  "description": "Catat faktur dan belanja 999 Mart",
+  "description": "Catat pembayaran supplier dan belanja 999 Mart",
   "lang": "id",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f4f6f5",
+  "background_color": "#eef1ef",
   "theme_color": "#0b7a3e",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
