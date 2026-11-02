@@ -60,6 +60,14 @@ What was checked before release, what was found, and what was fixed. Every bug i
 - If Google ever answered with an error or login page instead of data, the app said "no internet" and **dropped the new entry**. It now keeps the entry and retries (same ID, so it's never saved twice), with a clear message.
 - A test depended on the time of day (it failed just after midnight). The demo data was fixed.
 
+### Found by reading the code overnight
+- **Two workers logging in at the same moment** could overwrite each other's session (written at "last row + 1" without a lock). Sessions are now appended atomically.
+- **Editing an old entry:** the server allowed fixing the amount when the date was unchanged but older than 60 days, while the app still refused it. The app now uses the same rule.
+- **Pay sources typed by hand:** editing an entry whose pay source Ibu typed in the Sheet (e.g. "Cash") failed only at the server. The app now asks for it again.
+- **Session expiring mid-form:** the half-filled form was lost. Now, after logging in again, the form is still there.
+- **"Perlu dicek" banner:** it said "maybe a duplicate" even for entries the server had refused for another reason.
+- **After saving:** the done screen showed what the phone sent, not what the server stored (cleaned supplier name).
+
 ### Found by the code review (two independent reviewers)
 - A deferred logout never finished if the waiting entry was thrown away.
 - The server-date correction stayed active after the phone clock was fixed (it's now trusted for 12 h only).
