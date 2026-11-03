@@ -24,7 +24,7 @@
   var S = {
     token: load('token', ''), user: load('user', null), boot: load('boot', null), queue: load('queue', []),
     usage: load('usage', {}), names: load('names', []), hist: load('hist', {}),
-    device: load('device', ''), clock: load('clock', null), logoutLater: load('logoutLater', []), screen: 'home', form: null, month: '', query: '', busy: false, notice: ''
+    device: load('device', ''), clock: load('clock', null), logoutLater: load('logoutLater', []), installHidden: load('installHidden', false), screen: 'home', form: null, month: '', query: '', busy: false, notice: ''
   };
   S.queue.forEach(function (o) { if (!o.token && S.token) { o.token = S.token; o.by = S.user ? S.user.name : ''; } });
   if (!S.device) { S.device = 'HP-' + Math.random().toString(36).slice(2, 8).toUpperCase(); save('device', S.device); }
@@ -261,10 +261,23 @@
 
   // ───────────── render ─────────────
   var app = $('#app');
-  function bar(title, back) {
-    return '<header class="bar">' + (back ? '<button class="back" data-act="back" aria-label="Kembali">←</button>' : '') +
+  var ICON = {
+    back: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+    refresh: 'M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+    person: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+    logout: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
+    install: 'M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z',
+    close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'
+  };
+  function icon(n) { return '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + ICON[n] + '"/></svg>'; }
+  function standalone() { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } }
+  function bar(title, back, tools) {
+    return '<header class="bar">' + (back ? '<button class="back" data-act="back" aria-label="Kembali">' + icon('back') + '</button>' : '') +
       '<h1>' + esc(title) + '</h1>' +
-      (S.user && !back ? '<span class="who">' + esc(S.user.name) + (isAdmin() ? ' <span class="tag">Admin</span>' : '') + '</span>' : '') + '</header>';
+      (tools && tools.refresh ? '<button class="bar-btn" data-act="' + tools.refresh + '" aria-label="Muat ulang">' + icon('refresh') + '</button>' : '') +
+      (tools && tools.account && S.user ? '<button class="who" data-act="logout" aria-label="Akun: ' + esc(S.user.name) + '">' + icon('person') +
+        '<span class="nm">' + esc(S.user.name) + '</span>' + (isAdmin() ? '<span class="tag">Admin</span>' : '') + '</button>'
+        : (S.user && !back && !tools ? '<span class="who plain">' + esc(S.user.name) + '</span>' : '')) + '</header>';
   }
   function render() {
     if (!S.token) S.screen = 'login';
@@ -283,10 +296,10 @@
     h += '<form class="card stack" id="loginForm" autocomplete="on" novalidate>' +
       '<h2 class="h2">Masuk</h2>' +
       '<label class="lbl" for="lname">Nama</label>' +
-      '<input class="in" id="lname" name="username" autocomplete="username" autocapitalize="words" maxlength="30" placeholder="Nama Anda" value="' + esc(last) + '">' +
+      '<input class="in" id="lname" name="username" autocomplete="username" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="next" maxlength="30" placeholder="Nama Anda" value="' + esc(last) + '">' +
       (S.names.length > 1 ? '<div class="chips">' + S.names.slice(0, 4).map(function (n) { return '<button type="button" class="chip" data-act="usename" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
       '<label class="lbl" for="lpw">Kata sandi</label>' +
-      '<div class="pw"><input class="in" id="lpw" name="password" type="password" autocomplete="current-password" maxlength="100" placeholder="Kata sandi">' +
+      '<div class="pw"><input class="in" id="lpw" name="password" type="password" autocomplete="current-password" enterkeyhint="go" maxlength="100" placeholder="Kata sandi">' +
       '<button type="button" class="eye" data-act="eye">Lihat</button></div>' +
       '<div class="err-msg" id="loginErr" role="alert"></div>' +
       '<button class="btn primary" id="loginBtn" type="submit">Masuk</button></form>';
@@ -313,7 +326,7 @@
     var waiting = S.queue.filter(function (o) { return o.state === 'waiting'; }).length;
     var conflicts = S.queue.filter(function (o) { return o.state === 'conflict' || o.state === 'invalid'; }).length;
     var b = S.boot || {};
-    var h = bar('Catat 999');
+    var h = bar('Catat 999', false, { refresh: 'refresh', account: true });
     if (DEMO) h += '<div class="banner info"><b>Mode coba.</b> Data hanya di HP ini, tidak masuk ke spreadsheet.</div>';
     var refused = S.queue.some(function (o) { return o.state === 'invalid'; });
     if (conflicts) h += '<div class="banner err"><b>' + conflicts + ' transaksi perlu dicek</b> — ' + (refused ? 'buka Riwayat untuk melihat kenapa.' : 'mungkin tercatat dua kali.') + '<button class="btn small danger" data-act="history">Lihat</button></div>';
@@ -322,10 +335,22 @@
     h += '<button class="tile big" data-act="new"><span class="ic plus" aria-hidden="true">+</span><span class="t"><b>Catat Transaksi</b><span>Bayar supplier atau belanja</span></span></button>';
     h += '<button class="tile" data-act="history"><span class="ic" aria-hidden="true">📋</span><span class="t"><b>Riwayat Transaksi</b><span>Lihat, ubah, atau hapus</span></span>' +
       '<span class="num">' + (b.todayCount || 0) + '<small>hari ini</small></span></button>';
-    h += '<div class="foot">' + (b.fetchedAt ? 'Diperbarui ' + esc(hhmm(new Date(new Date(b.fetchedAt).getTime() + 7 * 3600e3).toISOString())) + ' · ' : '') +
-      '<button data-act="refresh">Muat ulang</button> · <button data-act="logout">Keluar</button>' +
-      (installEvt ? ' · <button data-act="install">Pasang di HP</button>' : '') + '</div>';
+    h += recentList(b.recent);
+    // only in the browser (not once installed), and until dismissed
+    if (!standalone() && !S.installHidden) h += '<div class="install"><span class="ic" aria-hidden="true">' + icon('install') + '</span><div class="t"><b>Pasang di HP</b><span>Buka dari layar utama, bisa tanpa internet.</span>' +
+      '<button class="btn small primary" data-act="install">Pasang</button></div><button class="x" data-act="installHide" aria-label="Tutup">' + icon('close') + '</button></div>';
+    if (b.fetchedAt) h += '<div class="updated">Diperbarui ' + esc(hhmm(new Date(new Date(b.fetchedAt).getTime() + 7 * 3600e3).toISOString())) + '</div>';
     return h;
+  }
+  // The last few entries saved by anyone in the shop: "is mine in?" at a glance, and who already recorded what.
+  function recentList(list) {
+    if (!list || !list.length) return '';
+    var t = today(), y = addDays(t, -1);
+    return '<section class="recent" aria-labelledby="recent-h"><h2 id="recent-h">Terakhir dicatat</h2>' + list.map(function (e) {
+      var when = (e.at || '').slice(0, 10), day = when === t ? '' : when === y ? 'Kemarin ' : shortDate(when) + ' ';
+      return '<button class="item tap" data-act="history"><div class="top"><div class="nm">' + esc(e.name) + '</div><div class="amt">' + rp(e.amount) + '</div></div>' +
+        '<div class="meta">' + esc(e.by) + ' · ' + esc(day + hhmm(e.at)) + (e.date !== when ? ' · untuk ' + esc(shortDate(e.date)) : '') + '</div></button>';
+    }).join('') + '</section>';
   }
 
   // ── form (new + edit) ──
@@ -358,18 +383,18 @@
     // 1 name
     var nameHtml;
     if (f.name) nameHtml = '<div class="picked"><b>' + esc(f.name) + (f.isNew ? ' <span class="new">BARU</span>' : '') + '</b><button class="btn small outline" data-act="unpick">Ganti</button></div>';
-    else nameHtml = '<input class="in" id="q" autocomplete="off" autocapitalize="characters" maxlength="60" placeholder="Cari nama PT / barang…" value="' + esc(f.q) + '"><div id="sugg"></div>' +
+    else nameHtml = '<input class="in" id="q" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next" maxlength="60" placeholder="Cari nama PT / barang…" value="' + esc(f.q) + '"><div id="sugg"></div>' +
       (f.q ? '' : '<div class="hint">Sering dipakai:</div><div class="chips" id="freq">' + frequent().map(function (n) { return '<button class="chip" data-act="pick" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>');
     h += step(1, 'st-name', 'Nama PT / Barang', false, nameHtml, e.name, f.name ? '' : 'q');
     // 2 invoice
-    h += step(2, 'st-inv', 'No. Invoice', true, '<input class="in" id="inv" autocomplete="off" autocapitalize="characters" maxlength="30" placeholder="Lihat di kertas invoice" value="' + esc(f.invoice) + '">' +
+    h += step(2, 'st-inv', 'No. Invoice', true, '<input class="in" id="inv" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next" maxlength="30" placeholder="Lihat di kertas invoice" value="' + esc(f.invoice) + '">' +
       '<div class="hint">Kosongkan kalau tidak ada invoice.</div>', e.invoice, 'inv');
     // 3 amount
-    h += step(3, 'st-amt', 'Nominal', false, '<div class="amount-wrap"><span class="rp">Rp</span><input class="in amount" id="amt" inputmode="numeric" autocomplete="off" maxlength="13" placeholder="0" value="' + esc(dots(f.amount)) + '"></div>' +
+    h += step(3, 'st-amt', 'Nominal', false, '<div class="amount-wrap"><span class="rp">Rp</span><input class="in amount" id="amt" inputmode="numeric" pattern="[0-9.]*" autocomplete="off" enterkeyhint="done" maxlength="13" placeholder="0" value="' + esc(dots(f.amount)) + '"></div>' +
       '<div class="words" id="words" aria-live="polite">' + esc(words(f.amount)) + '</div>', e.amount, 'amt');
     // 4 paid from
     var pay = '<div class="choices">' + PAY.concat(['Lainnya']).map(function (p) { return '<button class="choice' + (f.paidFrom === p ? ' on' : '') + '" data-act="from" data-v="' + esc(p) + '" aria-pressed="' + (f.paidFrom === p) + '">' + esc(p) + '</button>'; }).join('') + '</div>' +
-      (f.paidFrom === 'Lainnya' ? '<input class="in mt" id="other" aria-label="Uang siapa" autocapitalize="characters" maxlength="30" placeholder="Uang siapa? Contoh: Bujang" value="' + esc(f.other) + '">' : '');
+      (f.paidFrom === 'Lainnya' ? '<input class="in mt" id="other" aria-label="Uang siapa" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="30" placeholder="Uang siapa? Contoh: Bujang" value="' + esc(f.other) + '">' : '');
     h += step(4, 'st-from', 'Bayar pakai', false, pay, e.paidFrom);
     // 5 date
     var y = addDays(t, -1), other = f.date !== t && f.date !== y;
@@ -380,7 +405,7 @@
       '<div class="hint strong">' + esc(longDate(f.date)) + '</div>';
     h += step(5, 'st-date', 'Tanggal', false, dateHtml, e.date);
     // 6 note
-    h += step(6, 'st-note', 'Catatan', true, '<textarea class="in" id="note" maxlength="200" placeholder="Contoh: retur 2 dus">' + esc(f.note) + '</textarea>', '', 'note');
+    h += step(6, 'st-note', 'Catatan', true, '<textarea class="in" id="note" enterkeyhint="done" maxlength="200" placeholder="Contoh: retur 2 dus">' + esc(f.note) + '</textarea>', '', 'note');
     h += '<div class="actionbar"><button class="btn primary" data-act="toReview">Lanjut</button></div>';
     return h;
   }
@@ -472,6 +497,7 @@
   function saved(en, offline) {
     S.usage[en.name] = (S.usage[en.name] || 0) + 1; save('usage', S.usage);
     if (S.form && S.form.orig) patchCache(S.form.orig, en);
+    else if (!offline) addToCache(en);
     outdated(en.date.slice(0, 7));
     lastSaved = { entry: en, offline: offline, edit: S.form && S.form.mode === 'edit' };
     if (lastSaved.edit) S.month = en.date.slice(0, 7);
@@ -493,11 +519,11 @@
   function vHistory() {
     var ym = S.month || today().slice(0, 7), cur = today().slice(0, 7);
     var data = S.hist[ym];
-    var h = bar('Riwayat Transaksi', true);
+    var h = bar('Riwayat Transaksi', true, { refresh: 'hreload' });
     h += '<div class="monthnav"><button class="btn small outline" data-act="month" data-v="-1" aria-label="Bulan sebelumnya">‹ ' + esc(BLN[parse(addMonths(ym, -1) + '-01').getMonth()]) + '</button>' +
       '<b>' + esc(monthName(ym)) + '</b>' +
       '<button class="btn small outline" data-act="month" data-v="1"' + (ym >= cur ? ' disabled' : '') + ' aria-label="Bulan berikutnya">' + esc(BLN[parse(addMonths(ym, 1) + '-01').getMonth()]) + ' ›</button></div>';
-    h += '<input class="in search" id="hq" type="search" aria-label="Cari transaksi (nama PT atau no. invoice)" autocomplete="off" placeholder="Cari nama PT / no. invoice" value="' + esc(S.query) + '">';
+    h += '<input class="in search" id="hq" type="search" enterkeyhint="search" autocorrect="off" spellcheck="false" aria-label="Cari transaksi (nama PT atau no. invoice)" autocomplete="off" placeholder="Cari nama PT / no. invoice" value="' + esc(S.query) + '">';
     return h + '<div id="pend">' + pendList(ym) + '</div><div id="hlist">' + histList(ym, data) + '</div>';
   }
   // Entries still on this phone: conflicts first ("Perlu dicek"), then waiting for internet. Follows the search box.
@@ -527,9 +553,10 @@
   }
   function histList(ym, data) {
     var h = '';
-    if (!data) return '<div class="spinner" aria-label="Memuat"></div>';
+    if (!data) return '<div class="loading" role="status"><div class="spinner" aria-hidden="true"></div>Memuat riwayat…</div>';
     if (data.failed) return '<div class="banner err">' + esc(data.failed) + ' Riwayat bulan ini belum bisa dimuat.<button class="btn small outline" data-act="reload">Coba lagi</button></div>';
     if (data.stale) h += '<div class="banner warn">' + esc(data.stale) + ' Menampilkan data terakhir.<button class="btn small outline" data-act="reload">Coba lagi</button></div>';
+    else if (loading[ym]) h += '<div class="refreshing" role="status"><span class="spin dark" aria-hidden="true"></span>Memperbarui…</div>';
     var q = key(S.query), list = data.entries.filter(function (e) { return !q || key(e.name).indexOf(q) >= 0 || key(e.invoice).indexOf(q) >= 0 || score(S.query, e.name) >= 0.6; });
     var total = list.reduce(function (s, e) { return s + e.amount; }, 0);
     h += '<div class="card total"><div class="hint">' + (q ? 'Hasil cari · ' : 'Total ' + esc(monthName(ym)) + ' · ') + list.length + ' transaksi</div><div class="big">' + rp(total) + '</div></div>';
@@ -561,6 +588,7 @@
   function loadMonth(ym) {
     if (loading[ym]) return;
     loading[ym] = true;
+    redrawList(ym);   // show "Memperbarui…" over the list it already has
     api('list', { month: ym }).then(function (r) {
       loading[ym] = false;
       if (authFail(r)) return;
@@ -588,6 +616,15 @@
     save('hist', S.hist);
   }
   // keep at most 3 months on the phone: the one just loaded (it is on screen) plus the newest others
+  function addToCache(en) {
+    var ym = en.date.slice(0, 7), c = S.hist[ym], row = Object.assign({ canEdit: true, by: S.user ? S.user.name : '', at: new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 19), editedBy: '', editedAt: '' }, en);
+    if (c && c.entries && !c.entries.some(function (x) { return x.id === en.id; })) {
+      c.entries.push(row);
+      c.entries.sort(function (x, y) { return x.date !== y.date ? (x.date < y.date ? 1 : -1) : (x.at < y.at ? 1 : -1); });
+      c.total = c.entries.reduce(function (s, x) { return s + x.amount; }, 0); c.at = 0; save('hist', S.hist);
+    }
+    if (S.boot) { S.boot.recent = [row].concat((S.boot.recent || []).filter(function (x) { return x.id !== en.id; })).slice(0, 5); if ((row.at || '').slice(0, 10) === today()) S.boot.todayCount = (S.boot.todayCount || 0) + 1; save('boot', S.boot); }
+  }
   function trimHist(keep) {
     var ks = Object.keys(S.hist).sort().reverse().filter(function (k) { return k !== keep; }).slice(0, keep && S.hist[keep] ? 2 : 3);
     if (keep && S.hist[keep]) ks.push(keep);
@@ -643,7 +680,7 @@
         '<div class="cal">' + HR.map(function (x) { return '<span class="wd">' + x + '</span>'; }).join('') + cells + '</div>' +
         '<button class="btn outline" data-close="1">Batal</button>', function (b) {
           if (b.hasAttribute('data-cal')) { view = addMonths(view, Number(b.getAttribute('data-cal'))); draw(); }
-          else if (b.hasAttribute('data-day')) { f.date = b.getAttribute('data-day'); f.errors.date = ''; closeSheet(); render(); }
+          else if (b.hasAttribute('data-day')) { f.date = b.getAttribute('data-day'); f.errors.date = ''; closeSheet(); restep('st-date'); }
           else closeSheet();
         });
     }
@@ -665,7 +702,7 @@
       list.map(function (n) { return '<button class="btn outline" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') +
       '<button class="btn ghost" data-v="">Bukan, pakai nama baru "' + esc(q) + '"</button></div>', function (b) {
         var n = b.getAttribute('data-v'); closeSheet();
-        S.form.name = n || q; S.form.isNew = !n; S.form.q = ''; S.form.errors.name = ''; render();
+        S.form.name = n || q; S.form.isNew = !n; S.form.q = ''; S.form.errors.name = ''; restep('st-name');
       });
   }
   function detailSheet(id) {
@@ -708,8 +745,9 @@
   }
   function logoutSheet() {
     var n = S.queue.length;
-    openSheet('<h2>Keluar dari aplikasi?</h2>' + (n ? '<p>Masih ada <b>' + n + ' transaksi belum terkirim</b>. Transaksi itu tetap tersimpan di HP dan tetap tercatat atas nama yang mencatatnya.</p>' : '<p>Nanti harus masuk lagi dengan kata sandi.</p>') +
-      '<div class="stack"><button class="btn danger" data-v="out">Keluar</button><button class="btn outline" data-v="">Batal</button></div>', function (b) {
+    openSheet('<h2>Akun</h2><p>Masuk sebagai <b>' + esc(S.user ? S.user.name : '') + '</b>' + (isAdmin() ? ' (Admin)' : '') + '.</p>' +
+      (n ? '<p>Masih ada <b>' + n + ' transaksi belum terkirim</b>. Transaksi itu tetap tersimpan di HP dan tetap tercatat atas nama yang mencatatnya.</p>' : '<p>Kalau keluar, nanti harus masuk lagi dengan kata sandi.</p>') +
+      '<div class="stack"><button class="btn danger icon-btn" data-v="out">' + icon('logout') + 'Keluar</button><button class="btn outline" data-v="">Batal</button></div>', function (b) {
         closeSheet(); if (!b.getAttribute('data-v')) return;
         if (S.queue.some(function (o) { return o.token === S.token && o.state === 'waiting'; })) { S.logoutLater.push(S.token); save('logoutLater', S.logoutLater); }
         else api('logout').catch(function () { });
@@ -729,6 +767,10 @@
   }
 
   // ───────────── events ─────────────
+  // Listeners are attached once per element, so after() can run again after a partial update.
+  function on(el, ev, fn) { if (!el || el['_on_' + ev]) return; el['_on_' + ev] = true; el.addEventListener(ev, fn); }
+  // Enter on the phone keyboard: "next" moves to the next box, "done" puts the keyboard away (no surprise jumps).
+  function onEnter(el, fn) { on(el, 'keydown', function (ev) { if (ev.key === 'Enter' && !ev.isComposing && !ev.shiftKey) { ev.preventDefault(); fn(); } }); }
   function after() {
     var bad = document.querySelectorAll('.step.has-err');
     for (var bi = 0; bi < bad.length; bi++) {
@@ -736,35 +778,60 @@
       if (fld) { fld.setAttribute('aria-invalid', 'true'); fld.setAttribute('aria-describedby', bad[bi].id + '-e'); }
     }
     var lf = $('#loginForm');
-    if (lf) lf.addEventListener('submit', function (ev) { ev.preventDefault(); doLogin(); });
+    on(lf, 'submit', function (ev) { ev.preventDefault(); doLogin(); });
+    onEnter($('#lname'), function () { $('#lpw').focus(); });
     var q = $('#q');
     if (q) {
       renderSugg();
-      q.addEventListener('input', function () {
+      on(q, 'input', function () {
         S.form.q = q.value; clearErr('st-name', 'name'); var fr = $('#freq'); if (fr) { if (fr.previousElementSibling) fr.previousElementSibling.remove(); fr.remove(); }
         renderSugg();
+      });
+      // Enter: take the one confident match and go on to the invoice; otherwise put the keyboard away to show the list
+      onEnter(q, function () {
+        var top = searchScored(q.value)[0];
+        if (top && top.sc >= SURE) { pickName(top.s); var i = $('#inv'); if (i) i.focus(); } else q.blur();
       });
       if (S.form && S.form._focus) { q.focus(); S.form._focus = false; }
     }
     var amt = $('#amt');
-    if (amt) amt.addEventListener('input', function () {
+    on(amt, 'input', function () {
       var d = amt.value.replace(/[^\d]/g, '').replace(/^0+/, '').slice(0, 10);
       S.form.amount = d ? Number(d) : 0; amt.value = dots(S.form.amount);
       $('#words').textContent = words(S.form.amount);
       if (S.form.amount) clearErr('st-amt', 'amount');
     });
+    onEnter(amt, function () { amt.blur(); });
     var other = $('#other');
-    if (other) other.addEventListener('input', function () { if (other.value.trim()) clearErr('st-from', 'paidFrom'); });
+    on(other, 'input', function () { if (other.value.trim()) clearErr('st-from', 'paidFrom'); });
+    onEnter(other, function () { other.blur(); });
     var inv = $('#inv');
-    if (inv) inv.addEventListener('input', function () { clearErr('st-inv', 'invoice'); });
+    on(inv, 'input', function () { clearErr('st-inv', 'invoice'); });
+    onEnter(inv, function () { var a = $('#amt'); if (a) a.focus(); });
+    var note = $('#note');
+    onEnter(note, function () { note.blur(); });
     var hq = $('#hq');
-    if (hq) hq.addEventListener('input', function () {
+    on(hq, 'input', function () {
       S.query = hq.value; var ym = curMonth(), box = $('#hlist'), pb = $('#pend');
       if (box) box.innerHTML = histList(ym, S.hist[ym]);
       if (pb) pb.innerHTML = pendList(ym);
     });
+    onEnter(hq, function () { hq.blur(); });
     if (S.screen === 'history' && needLoad(curMonth())) loadMonth(curMonth());
   }
+  // Redraw ONE step of the form in place instead of the whole page: the box being typed in isn't destroyed, so the
+  // phone keyboard doesn't snap shut and the page doesn't jump under the finger.
+  function restep(id) {
+    var old = document.getElementById(id);
+    if (!old || S.screen !== 'form') { render(); return; }
+    collect();
+    var tmp = document.createElement('div'); tmp.innerHTML = vForm();
+    var nu = tmp.querySelector('#' + id);
+    if (!nu) { render(); return; }
+    old.parentNode.replaceChild(nu, old);
+    after();
+  }
+  function pickName(v) { S.form.name = v; S.form.isNew = false; S.form.q = ''; S.form.errors.name = ''; restep('st-name'); }
 
   // While typing, the pinned Lanjut/Simpan bar steps aside so it never covers the field (phone keyboard is up).
   document.addEventListener('focusin', function (ev) { if (ev.target.matches && ev.target.matches('input, textarea')) document.body.classList.add('typing'); });
@@ -789,15 +856,17 @@
       case 'usename': $('#lname').value = v; $('#lpw').focus(); break;
       case 'new': S.form = newForm(); S.form._focus = true; go('form'); break;
       case 'history': if (v !== 'keep' || !S.month) { S.month = today().slice(0, 7); S.query = ''; } failedAt = {}; go('history'); break;
-      case 'refresh': toast('Memuat ulang…'); refresh().then(flush); break;
+      case 'refresh': doRefresh(); break;
+      case 'hreload': reloadHistory(); break;
       case 'flush': S.queue.forEach(function (o) { o.retryAt = 0; }); toast('Mengirim…'); flush(); break;
       case 'logout': logoutSheet(); break;
-      case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; render(); } break;
-      case 'pick': S.form.name = v; S.form.isNew = false; S.form.q = ''; S.form.errors.name = ''; render(); break;
-      case 'unpick': S.form.name = ''; S.form.isNew = false; S.form._focus = true; render(); break;
+      case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; } else installHelp(); break;
+      case 'installHide': S.installHidden = true; save('installHidden', true); render(); break;
+      case 'pick': pickName(v); break;
+      case 'unpick': S.form.name = ''; S.form.isNew = false; S.form._focus = true; restep('st-name'); break;
       case 'addnew': addNew(); break;
-      case 'from': S.form.paidFrom = v; S.form.errors.paidFrom = ''; render(); if (v === 'Lainnya') { var o = $('#other'); if (o) o.focus(); } break;
-      case 'date': S.form.date = v; S.form.errors.date = ''; render(); break;
+      case 'from': S.form.paidFrom = v; S.form.errors.paidFrom = ''; restep('st-from'); if (v === 'Lainnya') { var o = $('#other'); if (o) o.focus({ preventScroll: true }); } break;
+      case 'date': S.form.date = v; S.form.errors.date = ''; restep('st-date'); break;
       case 'cal': calendarSheet(); break;
       case 'toReview':
         if (!validate()) { render(); var first = $('.has-err'); if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('Ada yang belum diisi.', 'err'); return; }
@@ -816,12 +885,59 @@
     if (!/[A-Z0-9]{2}/.test(q.replace(/[^A-Z0-9]/g, ''))) return;
     var sim = searchScored(q).filter(function (x) { return x.sc >= 0.45 && wordsFit(q, x.s); }).slice(0, 3).map(function (x) { return x.s; });
     if (sim.length) { similarSheet(q, sim); return; }
-    S.form.name = q; S.form.isNew = true; S.form.q = ''; S.form.errors.name = ''; render();
+    S.form.name = q; S.form.isNew = true; S.form.q = ''; S.form.errors.name = ''; restep('st-name');
   }
 
-  // ───────────── install + service worker ─────────────
+  // ───────────── refresh (button, pull down) ─────────────
+  function doRefresh() {
+    var btn = $('.bar-btn'); if (btn) { btn.classList.add('busy'); btn.disabled = true; }
+    var before = S.boot && S.boot.fetchedAt;
+    refresh().then(function () {
+      if (S.boot && S.boot.fetchedAt !== before) toast('Data sudah terbaru ✓', 'ok');
+      var b2 = $('.bar-btn'); if (b2) { b2.classList.remove('busy'); b2.disabled = false; }
+      flush();
+    });
+  }
+  function reloadHistory() { var ym = curMonth(); failedAt[ym] = 0; var c = S.hist[ym]; if (c && c.entries) c.at = 0; if (!loading[ym]) loadMonth(ym); refresh(true); }
+  // Pull down at the top of home or Riwayat to refresh, like other apps. (The browser's own pull-to-refresh would
+  // reload the whole page, so it is switched off in the CSS with overscroll-behavior.)
+  var ptr = { y0: null, dy: 0 };
+  function ptrShow(dy) {
+    var el = $('#ptr');
+    if (!el) { el = document.createElement('div'); el.id = 'ptr'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
+    var ready = dy > 80;
+    el.innerHTML = icon('refresh') + '<span>' + (ready ? 'Lepas untuk memuat ulang' : 'Tarik ke bawah untuk memuat ulang') + '</span>';
+    el.className = 'show' + (ready ? ' ready' : '');
+    el.style.transform = 'translate(-50%, ' + Math.min(dy, 110) * 0.6 + 'px)';
+  }
+  function ptrHide() { var el = $('#ptr'); if (el) { el.className = ''; el.style.transform = ''; } }
+  document.addEventListener('touchstart', function (e) {
+    ptr.y0 = (S.screen === 'home' || S.screen === 'history') && !$('#ov') && window.scrollY <= 0 && e.touches.length === 1 ? e.touches[0].clientY : null; ptr.dy = 0;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (ptr.y0 === null) return;
+    ptr.dy = e.touches[0].clientY - ptr.y0;
+    if (ptr.dy > 12 && window.scrollY <= 0) ptrShow(ptr.dy); else ptrHide();
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (ptr.y0 === null) return;
+    var go = ptr.dy > 80 && window.scrollY <= 0; ptr.y0 = null; ptrHide();
+    if (go) { if (S.screen === 'history') reloadHistory(); else doRefresh(); }
+  }, { passive: true });
+
+  // ───────────── install ─────────────
+  function installHelp() {
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    openSheet('<h2>Pasang di HP</h2>' + (ios
+      ? '<ol class="steps"><li>Buka link ini di <b>Safari</b>.</li><li>Ketuk tombol <b>Bagikan</b> (kotak dengan panah ke atas).</li><li>Pilih <b>Tambah ke Layar Utama</b>.</li></ol>'
+      : '<ol class="steps"><li>Buka link ini di <b>Chrome</b>.</li><li>Ketuk <b>⋮</b> di pojok kanan atas.</li><li>Pilih <b>Tambahkan ke layar utama</b> (atau <b>Instal aplikasi</b>).</li></ol>') +
+      '<p>Ikon <b>Catat 999</b> akan muncul di HP. Buka dari ikon itu mulai sekarang.</p><button class="btn outline" data-v="ok">Mengerti</button>', function () { closeSheet(); });
+  }
+
+  // ───────────── service worker ─────────────
   var installEvt = null;
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; if (S.screen === 'home') render(); });
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; });
+  window.addEventListener('appinstalled', function () { S.installHidden = true; save('installHidden', true); installEvt = null; if (S.screen === 'home') render(); });
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(function () { });
     var reloaded = false;
@@ -842,7 +958,7 @@
     patchCache: patchCache, histList: histList, pendList: pendList, isNet: isNet, trimHist: trimHist,
     render: render, collect: collect, renderSugg: renderSugg, toast: toast, uid: uid, shiftNow: shiftNow, daysBetween: daysBetween,
     phoneToday: phoneToday, isAdmin: isAdmin, editDays: editDays, backDays: backDays, loadMonth: loadMonth, findEntry: findEntry,
-    curMonth: curMonth, outdated: outdated, step: step,
+    curMonth: curMonth, outdated: outdated, step: step, restep: restep, addToCache: addToCache, recentList: recentList,
     searchScored: searchScored, SURE: SURE, wordsFit: wordsFit, api: api, refresh: refresh, flush: flush, doSave: doSave, endLaterSessions: endLaterSessions, authFail: authFail, SERVER_MSG: SERVER_MSG
   };
 })();

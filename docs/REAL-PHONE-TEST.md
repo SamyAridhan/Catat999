@@ -33,10 +33,14 @@ Tick each box. If something doesn't match **"You should see"**, note the step nu
    - [ ] Then type `setor rokok`.
    - You should see: **SETOR ROKOK** first, never plain ROKOK.
 8. **Keyboard**
-   - [ ] On the form, tap the Nominal box.
-   - You should see: the number keyboard, and the box not hidden behind it.
-   - [ ] Tap Catatan.
-   - You should see: you can still see what you're typing.
+   - [ ] On the form, type `yakul` and press the keyboard's Enter/➜ key.
+   - You should see: YAKULT picked and the cursor moving to No. Invoice. Press Enter again, and it moves to Nominal.
+   - [ ] Nominal shows the **number keyboard**. Type an amount and press Enter.
+   - You should see: the keyboard closes.
+   - [ ] With the keyboard open on Nominal, tap **Transfer Ibu**.
+   - You should see: the page **does not jump**, and Transfer Ibu is selected.
+   - [ ] On home, **pull the screen down**.
+   - You should see: *"Lepas untuk memuat ulang"*. Let go, and the data refreshes (*"Data sudah terbaru ✓"*).
 9. **Duplicate**
    - [ ] Enter step 6 again, same invoice `TEST1`.
    - You should see: *"Invoice ini sudah pernah dicatat"*. Tap **Jangan simpan**, and nothing new appears in Data.

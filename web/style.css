@@ -49,8 +49,8 @@ button { cursor: pointer; touch-action: manipulation; }
 .bar h1:focus, .done h2:focus { outline: none; }   /* focused only so screen readers announce the new screen */
 .bar .who { font-size: 15px; opacity: .95; text-align: right; }
 .bar .tag { display: inline-block; background: var(--card); color: var(--primary); font-size: 12px; font-weight: 800; border-radius: 6px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px; }
-.bar .back { background: rgba(255,255,255,.18); border: 0; color: var(--primary-ink); border-radius: 10px; min-width: 48px; height: 44px; font-size: 22px; }
-.bar .back:active { background: rgba(255,255,255,.35); }
+.bar .back { background: rgba(0,0,0,.15); border: 0; color: var(--primary-ink); border-radius: 10px; min-width: 48px; height: 44px; font-size: 22px; }
+.bar .back:active { background: rgba(0,0,0,.28); }
 @media (min-width: 589px) { .bar { border-radius: 0 0 14px 14px; } }
 
 .demo { background: var(--demo); color: var(--primary-ink); text-align: center; font-size: 14px; padding: 6px; }
@@ -246,3 +246,50 @@ textarea.in { min-height: 80px; font-size: 18px; resize: vertical; }
   .amount-wrap .in.amount { padding-left: 46px; }
   .amount-wrap .rp { font-size: 19px; left: 12px; }
 }
+
+/* ── icons (inline SVG, colour follows the text) ── */
+.icon { width: 24px; height: 24px; fill: currentColor; display: block; flex: none; }
+.bar .back { display: inline-flex; align-items: center; justify-content: center; }
+.bar .back .icon { width: 26px; height: 26px; }
+.bar-btn { background: rgba(0,0,0,.15); border: 0; color: var(--primary-ink); border-radius: 10px; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.bar-btn:active { background: rgba(0,0,0,.28); }
+.bar-btn.busy .icon { animation: spin .9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .bar-btn.busy .icon { animation: none; opacity: .6; } }
+.bar button.who { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,.15); border: 0; color: var(--primary-ink); border-radius: 22px; min-height: 44px; padding: 0 12px 0 8px; font-size: 15px; font-weight: 700; max-width: 46%; flex: none; }
+.bar button.who:active { background: rgba(0,0,0,.28); }
+.bar button.who .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar button.who .tag { margin-left: 0; }
+@media (max-width: 340px) { .bar button.who .nm { max-width: 72px; } .bar h1 { font-size: 19px; } }
+.btn.icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* ── home: install card, latest entries, last refresh time ── */
+.install { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 6px 10px 12px; margin-bottom: 12px; }
+.install .ic { color: var(--primary); }
+.install .t { flex: 1; min-width: 0; }
+.install .t b { display: block; font-size: 16px; }
+.install .t span { display: block; color: var(--muted); font-size: 14px; }
+.install .btn { margin: 8px 0 2px; }
+.install .ic { padding-top: 2px; }
+.install .x { background: none; border: 0; color: var(--muted); width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.recent { margin-top: 6px; }
+.recent h2 { font-size: 15px; font-weight: 700; color: var(--muted); margin: 8px 2px 8px; }
+.updated { text-align: center; color: var(--muted); font-size: 12px; margin: 14px 0 6px; }
+ol.steps { padding-left: 22px; line-height: 1.6; font-size: 17px; }
+
+/* ── Riwayat: loading / refreshing ── */
+.loading { text-align: center; color: var(--muted); font-size: 15px; padding-bottom: 20px; }
+.loading .spinner { margin: 24px auto 12px; }
+.refreshing { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 14px; margin: -4px 0 10px; }
+.spin.dark { width: 16px; height: 16px; border-width: 2px; border-color: var(--line); border-top-color: var(--primary); }
+
+/* ── pull down to refresh ── */
+body { overscroll-behavior-y: contain; }
+#ptr { position: fixed; top: 64px; left: 50%; transform: translate(-50%, 0); z-index: 6; display: none; align-items: center; gap: 8px; background: var(--card); color: var(--muted); border: 1px solid var(--line); border-radius: 22px; padding: 8px 14px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.12); pointer-events: none; }
+#ptr.show { display: flex; }
+#ptr.ready { color: var(--primary-strong); }
+#ptr .icon { width: 20px; height: 20px; transition: transform .15s; }
+#ptr.ready .icon { transform: rotate(180deg); }
+.recent .item { padding: 10px 14px; margin-bottom: 8px; }
+.recent .item .nm { font-size: 16px; }
+.recent .item .amt { font-size: 16px; }
+.recent .item .meta { font-size: 14px; }

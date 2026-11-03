@@ -137,6 +137,7 @@
       return { ok: true, user: user, today: t, payFrom: PAY, suppliers: suppliers(),
         frequent: Object.keys(freq).sort(function (x, y) { return freq[y] - freq[x]; }).slice(0, 10),
         todayCount: d.filter(function (r) { return r.status !== 'DIHAPUS' && r.at.slice(0, 10) === t; }).length,
+        recent: d.filter(function (r) { return r.status !== 'DIHAPUS'; }).sort(function (x, y) { return x.at < y.at ? 1 : x.at > y.at ? -1 : 0; }).slice(0, 5).map(pub),
         limits: { maxAmount: LIMIT.maxAmount, backDays: user.role === 'ADMIN' ? LIMIT.adminBackDays : LIMIT.workerBackDays, editDays: LIMIT.editDays } };
     }
     if (a === 'list') {

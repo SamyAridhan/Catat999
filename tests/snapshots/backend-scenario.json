@@ -478,6 +478,7 @@
    ],
    "frequent": [],
    "todayCount": 0,
+   "recent": [],
    "limits": {
     "maxAmount": 500000000,
     "backDays": 60,
@@ -627,6 +628,7 @@
    ],
    "frequent": [],
    "todayCount": 0,
+   "recent": [],
    "limits": {
     "maxAmount": 500000000,
     "backDays": 400,

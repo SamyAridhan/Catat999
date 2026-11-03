@@ -213,9 +213,10 @@ function allowWrite_(hash) {
 function boot_(user) {
   var today = todayStr_();
   var rows = readTable_(SH.DATA, DATA_HEADERS.length);
-  var freq = {}, todayCount = 0, cutoff = addDays_(today, -60);
+  var freq = {}, todayCount = 0, cutoff = addDays_(today, -60), live = [];
   rows.forEach(function (r) {
     if (isDeleted_(r)) return;
+    live.push(r);
     var d = fmtDate_(r[C.DATE]);
     if (d >= cutoff) freq[r[C.NAME]] = (freq[r[C.NAME]] || 0) + 1;
     if (fmtDate_(r[C.AT]) === today) todayCount++;
@@ -225,6 +226,8 @@ function boot_(user) {
     suppliers: listSuppliers_(),
     frequent: Object.keys(freq).sort(function (a, b) { return freq[b] - freq[a]; }).slice(0, 10).map(unquote_),
     todayCount: todayCount,
+    // the last few saved by anyone in the shop: "is it in?" at a glance on the home screen, and avoids double entry
+    recent: live.sort(function (x, y) { return toTime_(y[C.AT]) - toTime_(x[C.AT]); }).slice(0, 5).map(rowToObj_),
     limits: { maxAmount: LIMIT.maxAmount, backDays: user.role === 'ADMIN' ? LIMIT.adminBackDays : LIMIT.workerBackDays, editDays: LIMIT.editDays }
   };
 }

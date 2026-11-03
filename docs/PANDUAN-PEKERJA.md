@@ -37,6 +37,11 @@ Kolom yang **wajib** diisi akan berwarna merah dengan tulisan **Wajib diisi** ka
 2. Ketuk **Ubah** untuk memperbaiki, atau **Hapus**, lalu pilih alasannya.
 3. Bisa sampai **3 hari** setelah dicatat. Lewat dari itu, **bilang ke Ibu**.
 
+## Di layar utama
+- **Terakhir dicatat**: 5 transaksi terakhir dari semua pekerja. Cek di sini sebelum mencatat, supaya tidak dobel.
+- **Muat ulang**: tarik layar ke bawah, atau ketuk tombol **↻** di kanan atas.
+- **Keluar**: ketuk **nama Anda** di kanan atas, lalu ketuk **Keluar**.
+
 ## Penting
 - Kata sandi **jangan dibagikan** ke orang di luar toko.
 - Kalau HP hilang atau ganti pekerja, bilang ke Ibu supaya kata sandi diganti.
