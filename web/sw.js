@@ -1,6 +1,6 @@
 /* Service worker: keeps the app usable without internet (the app shell is cached).
  * Bump VERSION whenever you change any web file, so phones pick up the update. */
-var VERSION = 'catat999-v7';
+var VERSION = 'catat999-v8';
 var SHELL = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'seed-demo.js', 'mock-api.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', function (e) {
