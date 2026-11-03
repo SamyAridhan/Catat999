@@ -3,7 +3,7 @@
   "private": true,
   "description": "Catat 999 \u2014 supplier payment recorder (PWA + Google Apps Script)",
   "scripts": {
-    "test:backend": "cd tests && TZ=Asia/Jakarta node backend.test.js && TZ=Asia/Jakarta node backend.edge.test.js && TZ=Asia/Jakarta node backend.sheet.test.js && TZ=Asia/Jakarta node backend.snapshot.test.js && TZ=Asia/Jakarta node backend.property.test.js && TZ=Asia/Jakarta node contract.test.js",
+    "test:backend": "cd tests && TZ=Asia/Jakarta node backend.test.js && TZ=Asia/Jakarta node backend.edge.test.js && TZ=Asia/Jakarta node backend.sheet.test.js && TZ=Asia/Jakarta node backend.archive.test.js && TZ=Asia/Jakarta node backend.snapshot.test.js && TZ=Asia/Jakarta node backend.property.test.js && TZ=Asia/Jakarta node contract.test.js",
     "test:ui": "node tests/ui.test.js",
     "mutate:backend": "mkdir -p mutation-src && cp apps-script/Code.gs mutation-src/Code.js && stryker run stryker.backend.json",
     "mutate:app": "stryker run stryker.app-logic.json && stryker run stryker.app-flows.json",

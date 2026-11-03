@@ -79,7 +79,7 @@ const rowBy = (f) => data().find(f);
   await page.fill('#lpw', 'tokoSembilan9'); await tap('#loginBtn');
   await page.waitForSelector('[data-act="new"]');
   check('U02', 'right password → home, with the worker\'s name on top', (await text('.bar .who')) === 'BUJANG');
-  await page.waitForFunction(() => window.CatatApp.state.boot && window.CatatApp.state.boot.suppliers.length === 123);
+  await page.waitForFunction(() => window.CatatApp.state.boot && window.CatatApp.state.boot.suppliers.length === 124);
   await page.reload(); await page.waitForSelector('[data-act="new"]');
   check('U03', 'the phone stays logged in (reopening the app goes straight to home)', (await page.locator('#loginForm').count()) === 0);
 

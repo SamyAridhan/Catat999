@@ -13,6 +13,7 @@ Google Apps Script web app ──writes──▶ Google Sheet (your Drive)
                                        ├─ Data      ← every transaction (source of truth; Ibu may edit)
                                        ├─ Supplier  ← one spelling per supplier
                                        ├─ Log       ← who added / changed / deleted what, and when
+                                       ├─ Arsip     ← rows older than ~15 months, moved automatically (keeps saves fast)
                                        └─ Sesi (hidden) ← login sessions
 ```
 
@@ -84,6 +85,13 @@ The monthly tab is read-only in practice, because it is rebuilt automatically. E
 
 **Supplier tab:** set **Aktif** to `TIDAK` to hide a name from the app's list.
 
+**Arsip tab (automatic).** Every save reads the whole Data tab, so Data is kept small. On the 1st of each month, around 03:00, rows older than about 15 months move to **Arsip**. That's this month plus the 14 before it, which is past every limit: nobody can add or change entries that old from the app. Nothing is lost:
+- Month tabs stay as they are.
+- Riwayat still shows those months (read-only).
+- **Catat 999 → Perbarui semua tab** rebuilds from Data and Arsip together.
+
+Ibu doesn't need to do anything. **Catat 999 → Pindahkan data lama ke Arsip** runs the same move by hand. If an archived row ever needs fixing, change it in Arsip, then run *Perbarui semua tab*.
+
 ## Security
 - **Passwords.** Only salted, iterated SHA-256 hashes are stored, in Script Properties, never in the Sheet or the code.
   - Five wrong tries from one phone lock that phone out for 15 minutes.
@@ -104,7 +112,7 @@ The monthly tab is read-only in practice, because it is rebuilt automatically. E
 ## Limits
 - Workers can date an entry up to 60 days back; Ibu, up to about 13 months. No future dates.
 - The maximum is Rp 500.000.000 per entry. Rp 20 juta and above gets a "check the zeros" warning.
-- A save takes 2–4 seconds while the month tab is rebuilt. That's fine at a few hundred entries a month. After a few years, move old rows out of Data into an archive Sheet.
+- A save takes a few seconds while the month tab is rebuilt. Data never grows past about 15 months (see **Arsip tab**), so saves don't get slower as the years pass.
 
 ## Tests
 ```
@@ -131,7 +139,7 @@ Reports land in `reports/mutation/*.html`. To approve a deliberate change to the
 ## Files
 ```
 apps-script/Code.gs          backend: API, security, validation, monthly tabs, triggers, menu
-apps-script/Seed.gs          123 supplier names, one spelling each, from the 2025–26 ledgers
+apps-script/Seed.gs          124 supplier names, one spelling each, from the 2025–26 ledgers
 apps-script/appsscript.json  WIB timezone, web-app settings
 web/                         the PWA (published by GitHub Pages)
 docs/PANDUAN-PEKERJA.md      one-page guide for workers (Bahasa Indonesia)

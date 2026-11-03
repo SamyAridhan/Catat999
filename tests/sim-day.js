@@ -130,7 +130,7 @@ function invariants(step) {
   const busyLabel = await text(bujang, '#loginBtn');
   check('07:30', 'login button shows it is working while the slow server answers', /Masuk…/.test(busyLabel), busyLabel);
   await P(bujang).waitForSelector('[data-act="new"]', { timeout: 15000 });
-  await P(bujang).waitForFunction(() => window.CatatApp.state.boot && window.CatatApp.state.boot.suppliers.length === 123, null, { timeout: 15000 });
+  await P(bujang).waitForFunction(() => window.CatatApp.state.boot && window.CatatApp.state.boot.suppliers.length === 124, null, { timeout: 15000 });
   await snap(bujang, 'home-empty');
   await record(bujang, { q: 'sari', pick: 'SARI ROTI', amount: 186000, pay: 'Uang Kasir' }, '07:30');
   check('07:30', 'SARI ROTI saved', (await text(bujang, '.done h2')) === 'Berhasil disimpan');
@@ -324,16 +324,16 @@ function invariants(step) {
   // ── a real day from the 999 Mart ledger, names typed exactly as they were typed there ──
   const realDayFile = process.env.REAL_DAY;   // [[typed name, amount], ...] — kept outside the repo
   if (realDayFile && fs.existsSync(realDayFile)) {
-    at('Real day', 'Bujang + Muda', 'replaying a real ledger day; a hurried worker taps the first suggestion (or "+ Tambah" if none)');
+    at('Real day', 'Bujang + Muda', 'replaying a real ledger day; a hurried worker taps the first button every time');
     const day = JSON.parse(fs.readFileSync(realDayFile, 'utf8')).filter(x => x[1]);
     await toHome(bujang); await toHome(muda);
     const outcomes = [];
     for (let i = 0; i < day.length; i++) {
       const [typed, amount] = day[i]; const d = i % 2 ? muda : bujang;
       await tap(d, '[data-act="new"]'); await type(d, '#q', typed);
-      const first = await P(d).locator('#sugg button[data-act="pick"]').first().textContent().catch(() => null);
-      if (first) await tap(d, '#sugg button[data-act="pick"]');
-      else { await tap(d, '[data-act="addnew"]'); if (await P(d).locator('#ov').count()) await tap(d, '#ov button'); }
+      // hurried: taps whatever button is first (a sure match, or "+ Tambah"), and the first choice if asked
+      await tap(d, '#sugg button');
+      if (await P(d).locator('#ov').count()) await tap(d, '#ov button');
       const picked = await P(d).evaluate(() => window.CatatApp.state.form.name);
       await type(d, '#amt', String(amount)); await tapText(d, '#st-from .choice', 'Transfer Ibu');
       await tap(d, '[data-act="toReview"]'); await tap(d, '#saveBtn'); await P(d).waitForSelector('.done, #ov', { timeout: 20000 });

@@ -65,7 +65,7 @@ const ok = (c, m) => { assert.ok(c, m); passed++; console.log('  ✓', m); };
   await page.waitForSelector('[data-act="new"]');
   ok((await page.textContent('.bar .who')).trim() === 'BUJANG', 'logged in through the real backend');
   await page.waitForFunction(() => window.CatatApp.state.boot && window.CatatApp.state.boot.suppliers.length > 100);
-  ok(true, 'supplier list (123 seeded names) loaded from the Sheet');
+  ok(true, 'supplier list (124 seeded names) loaded from the Sheet');
 
   // record a supplier payment → lands in Data, month tab and Log
   await record('yafindo', 'YAFINDO', 1776424, 'Transfer Ibu', '0012345');

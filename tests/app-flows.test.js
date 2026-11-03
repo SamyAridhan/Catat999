@@ -232,7 +232,7 @@ S.queue = [];
     await new Promise(r => setTimeout(r, 600)); calls.length = 0;
     S.queue = [{ qid: 'q1', state: 'waiting', entry: { id: 'e1abcdefgh', type: 'SUPPLIER', date: A.today(), name: 'ROKOK', invoice: '', amount: 5000, paidFrom: 'Modal', note: '' }, token: S.token, by: S.user.name }];
     window.dispatchEvent(new Event('online'));
-    await new Promise(r => setTimeout(r, 1200));
+    for (let i = 0; i < 50 && !(calls.includes('add') && calls.some(c => c.startsWith('list'))); i++) await new Promise(r => setTimeout(r, 100));   // up to 5 s on a busy machine
     out.push([calls.includes('add'), 'online event: waiting entries are sent', calls.slice(), 'add']);
     out.push([calls.some(c => c.startsWith('list')), 'online event on Riwayat: the month is reloaded', calls, 'list']);
     S.screen = 'home'; A.render(); calls.length = 0;
@@ -378,6 +378,18 @@ S.queue = [];
     eq(calls.filter(c => c === 'remove').length, 1, 'delete: tapping reasons again while deleting → deleted once');
     window.CatatMockApi.handle = real;
     S.screen = 'home'; A.render();
+    return out;
+  }));
+  // ── an archived entry (older than ~15 months, moved to the Arsip tab) says so instead of "only Ibu" ──
+  results.push(...await page.evaluate(async () => {
+    const A = window.CatatApp, S = A.state, out = [];
+    const ym = A.today().slice(0, 7);
+    const e = { id: 'eARSIP000001', date: A.today(), name: 'LAMA SEKALI', invoice: '', amount: 999, paidFrom: 'Modal', note: '', by: 'ANI', at: '2025-01-01T10:00:00', canEdit: false, archived: true };
+    S.hist[ym] = { entries: [e], total: 999, at: Date.now() }; S.month = ym; S.screen = 'history'; A.render();
+    document.querySelector('#hlist .item.tap').click(); await new Promise(r => setTimeout(r, 50));
+    const t = document.querySelector('#ov').textContent;
+    out.push([/dipindah ke tab Arsip/.test(t) && !/Hanya Ibu/.test(t) && !document.querySelector('#ov [data-v="edit"]'), 'archived entry: "sudah dipindah ke tab Arsip", no Ubah/Hapus', t.slice(0, 120), 'Arsip note']);
+    document.querySelector('#ov [data-v="close"]').click(); S.screen = 'home'; A.render();
     return out;
   }));
   await ctx.close();

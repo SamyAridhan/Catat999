@@ -676,7 +676,7 @@
     openSheet('<div class="sheet-title"><b>' + esc(e.name) + '</b><div class="money">' + rp(e.amount) + '</div></div><dl class="kv">' +
       rows.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>' +
       (e.canEdit ? '<div class="row"><button class="btn outline" data-v="edit">Ubah</button><button class="btn danger-outline" data-v="del">Hapus</button></div>'
-        : '<div class="banner info">Sudah lebih dari ' + editDays() + ' hari. Hanya Ibu yang bisa mengubah.</div>') +
+        : '<div class="banner info">' + (e.archived ? 'Transaksi lama, sudah dipindah ke tab Arsip. Kalau perlu diubah, ubah langsung di spreadsheet.' : 'Sudah lebih dari ' + editDays() + ' hari. Hanya Ibu yang bisa mengubah.') + '</div>') +
       '<button class="btn ghost" data-v="close">Tutup</button>', function (b) {
         var v = b.getAttribute('data-v'); closeSheet();
         if (v === 'edit') { S.form = newForm(e); go('form'); }

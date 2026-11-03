@@ -24,7 +24,7 @@ Workers record **payments that have already happened** (supplier invoices paid b
 ## Supplier names
 | # | Requirement | Check | Also |
 |---|---|---|---|
-| 11 | 123 known suppliers are there from day one, one spelling each | R10 | backend |
+| 11 | 124 known suppliers (incl. SETOR ROKOK, kept apart from ROKOK) are there from day one, one spelling each | R10 | backend |
 | 12 | The list holds names only: no bank account or ID numbers | R11 | — |
 | 13 | Search finds names despite typos | U04 | app-logic |
 | 14 | A known name typed differently is stored with its one spelling | R12, U11 | backend, contract |

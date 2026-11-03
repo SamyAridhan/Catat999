@@ -1,4 +1,4 @@
-/** Starting supplier list: one spelling per supplier, from the 999 Mart ledgers 2025–2026.
+/** Starting supplier list: one spelling per supplier, from the 999 Mart ledgers 2025–2026 (124 names). SETOR ROKOK (the weekly ~Rp 10 juta deposit for the cigarette supplier) is its own name so it is never mixed with ROKOK purchases.
  * Only used by setup() when the Supplier tab is empty. Edit the Supplier tab afterwards, not this file. */
 var SEED_SUPPLIERS = [
   ["PT. YAFINDO MITRA PERMATA", "PT"],
@@ -96,6 +96,7 @@ var SEED_SUPPLIERS = [
   ["SALES DAVVI DWIASA", "PT"],
   ["SALES FELIXIO", "PT"],
   ["ROKOK", "ITEM"],
+  ["SETOR ROKOK", "ITEM"],
   ["GOGO SUPERMARKET", "ITEM"],
   ["DELIMA INDAH", "ITEM"],
   ["TOP UP SALDO FASTPAY", "ITEM"],

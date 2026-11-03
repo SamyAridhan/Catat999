@@ -40,6 +40,10 @@
       "menuLogoutAll"
      ],
      [
+      "Pindahkan data lama ke Arsip",
+      "menuArchive"
+     ],
+     [
       "---"
      ],
      [
@@ -442,6 +446,7 @@
     "SALES DAVVI DWIASA",
     "SALES FELIXIO",
     "ROKOK",
+    "SETOR ROKOK",
     "GOGO SUPERMARKET",
     "DELIMA INDAH",
     "TOP UP SALDO FASTPAY",
@@ -590,6 +595,7 @@
     "SALES DAVVI DWIASA",
     "SALES FELIXIO",
     "ROKOK",
+    "SETOR ROKOK",
     "GOGO SUPERMARKET",
     "DELIMA INDAH",
     "TOP UP SALDO FASTPAY",
@@ -6678,21 +6684,6 @@
     ],
     [
      "setNumberFormats",
-     125,
-     1,
-     1,
-     4,
-     [
-      [
-       "@",
-       "@",
-       "@",
-       "dd/mm/yyyy"
-      ]
-     ]
-    ],
-    [
-     "setNumberFormats",
      126,
      1,
      1,
@@ -6709,6 +6700,21 @@
     [
      "setNumberFormats",
      127,
+     1,
+     1,
+     4,
+     [
+      [
+       "@",
+       "@",
+       "@",
+       "dd/mm/yyyy"
+      ]
+     ]
+    ],
+    [
+     "setNumberFormats",
+     128,
      1,
      1,
      4,
@@ -7750,7 +7756,8 @@
   "triggers",
   [
    "onDataEdit",
-   "onDataChange"
+   "onDataChange",
+   "archiveOld"
   ]
  ],
  [

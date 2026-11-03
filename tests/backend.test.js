@@ -41,13 +41,13 @@ test('setup: tabs in order, locale/timezone, hidden ID column + session tab, tri
   assert.ok(env.ss.getSheetByName('Sesi').hidden);
   assert.deepStrictEqual(env.ss.getSheetByName('Data').hiddenCols, [12]);
   assert.ok(env.ss.getSheetByName('Data').filter, 'filter enabled on Data');
-  assert.deepStrictEqual(env.triggers.sort(), ['onDataChange', 'onDataEdit']);
+  assert.deepStrictEqual(env.triggers.sort(), ['archiveOld', 'onDataChange', 'onDataEdit']);
   assert.strictEqual(env.ss.getSheetByName('Supplier').getLastRow(), 1 + SEED_SUPPLIERS.length);
 });
 test('setup twice: no duplicate seed or triggers', () => {
   setup();
   assert.strictEqual(env.ss.getSheetByName('Supplier').getLastRow(), 1 + SEED_SUPPLIERS.length);
-  assert.strictEqual(env.triggers.length, 2);
+  assert.strictEqual(env.triggers.length, 3);
 });
 
 // ── auth ──

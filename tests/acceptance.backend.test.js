@@ -120,11 +120,11 @@ req('R09', '"Keluarkan semua HP" and changing a password log every phone out', (
 });
 
 // ─────────────── supplier list ───────────────
-req('R10', 'the 123 known suppliers are there from the start, one spelling each, and the app gets them', () => {
-  assert.strictEqual(SEED_SUPPLIERS.length, 123);
-  assert.strictEqual(new Set(SEED_SUPPLIERS.map(nameKey_)).size, 123, 'no two spellings of the same supplier');
-  assert.strictEqual(rows('Supplier').length, 123);
-  assert.strictEqual(call({ action: 'boot', token: W }).suppliers.length, 123);
+req('R10', 'the 124 known suppliers are there from the start, one spelling each, and the app gets them', () => {
+  assert.strictEqual(SEED_SUPPLIERS.length, 124);
+  assert.strictEqual(new Set(SEED_SUPPLIERS.map(nameKey_)).size, 124, 'no two spellings of the same supplier');
+  assert.strictEqual(rows('Supplier').length, 124);
+  assert.strictEqual(call({ action: 'boot', token: W }).suppliers.length, 124);
 });
 req('R11', 'the seed holds names only: no bank account or ID numbers', () => {
   const src = fs.readFileSync(path.join(dir, 'Seed.gs'), 'utf8');

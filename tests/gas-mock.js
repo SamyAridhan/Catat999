@@ -19,6 +19,7 @@ class MockRange {
     return p;
   }
   getValues() {
+    if (MockRange.stats) MockRange.stats.cellsRead += this.nr * this.nc;   // how much a call reads (speed on real Sheets ~ cells read)
     const out = [];
     for (let i = 0; i < this.nr; i++) {
       const row = this.sheet.cells[this.r - 1 + i] || [];
@@ -43,6 +44,24 @@ class MockRange {
     return this;
   }
   setValue(v) { return this.setValues([[v]]); }
+  // the Sheet's own sort: rows of this range, by columns (1-based within the sheet); blanks last, dates/numbers before text
+  sort(spec) {
+    const specs = (Array.isArray(spec) ? spec : [spec]).map(x => typeof x === 'number' ? { column: x, ascending: true } : x);
+    const rows = []; for (let i = 0; i < this.nr; i++) rows.push((this.sheet.cells[this.r - 1 + i] || []).slice());
+    const rank = v => v === '' || v === undefined || v === null ? [2, 0] : v instanceof Date ? [0, v.getTime()] : typeof v === 'number' ? [0, v] : [1, String(v)];
+    rows.sort((a, b) => { for (const s of specs) { const x = rank(a[s.column - 1]), y = rank(b[s.column - 1]); const d = x[0] - y[0] || (x[1] < y[1] ? -1 : x[1] > y[1] ? 1 : 0); if (d) return s.ascending === false && x[0] === y[0] ? -d : d; } return 0; });
+    rows.forEach((r, i) => { this.sheet.cells[this.r - 1 + i] = r; });
+    this.sheet.calls.push(['sort', this.r, this.c, this.nr, this.nc, specs]);
+    return this;
+  }
+  copyTo(dest) {   // values exactly as stored (no re-typing)
+    for (let i = 0; i < this.nr; i++) {
+      const src = this.sheet.cells[this.r - 1 + i] || [];
+      const tgt = dest.sheet.cells[dest.r - 1 + i] || (dest.sheet.cells[dest.r - 1 + i] = []);
+      for (let j = 0; j < this.nc; j++) tgt[dest.c - 1 + j] = src[this.c - 1 + j] === undefined ? '' : src[this.c - 1 + j];
+    }
+    return dest;
+  }
   _grid(name, f) { if (f.length !== this.nr || f[0].length !== this.nc) throw new Error(name + ' dims mismatch'); this.sheet.calls.push([name, this.r, this.c, this.nr, this.nc, f]); return this; }
   setNumberFormats(f) { return this._grid('setNumberFormats', f); }
   setFontWeights(f) { return this._grid('setFontWeights', f); }
@@ -73,6 +92,7 @@ class MockSheet {
   getMaxRows() { return this.maxRows; }
   appendRow(arr) { const r = this.getLastRow() + 1; if (r > this.maxRows) this.maxRows = r; this.cells[r - 1] = arr.slice(); return this; }
   insertRowsAfter(after, n) { this.maxRows += n; return this; }
+  deleteRows(start, n) { this.cells.splice(start - 1, n); this.maxRows -= n; return this; }
   deleteRow(r) { this.cells.splice(r - 1, 1); return this; }
   clear() { this.cells = []; this.calls = []; return this; }
   setFrozenRows(n) { this.frozen = n; }
@@ -119,7 +139,8 @@ function install(globalObj) {
   const props = new Map();
   const cache = new Map();
   const triggers = [];
-  const stats = { sleeps: 0 };
+  const stats = { sleeps: 0, cellsRead: 0 };
+  MockRange.stats = stats;
   // Sheet UI: menus are recorded; prompts answer from ui.answers (queue), alerts are recorded
   const ui = {
     menus: [], alerts: [], prompts: [], answers: [],
@@ -137,7 +158,7 @@ function install(globalObj) {
     },
     ScriptApp: {
       getProjectTriggers: () => triggers.map(h => ({ getHandlerFunction: () => h })),
-      newTrigger: h => { const b = { forSpreadsheet: () => b, onEdit: () => b, onChange: () => b, create: () => { triggers.push(h); return b; } }; return b; }
+      newTrigger: h => { const b = { forSpreadsheet: () => b, onEdit: () => b, onChange: () => b, timeBased: () => b, onMonthDay: () => b, atHour: () => b, create: () => { triggers.push(h); return b; } }; return b; }
     },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => (props.has(k) ? props.get(k) : null), setProperty: (k, v) => props.set(k, String(v)) }) },
     CacheService: { getScriptCache: () => ({ get: k => (cache.has(k) ? cache.get(k) : null), put: (k, v) => cache.set(k, v), remove: k => cache.delete(k) }) },

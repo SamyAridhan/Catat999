@@ -1,5 +1,5 @@
 // Supplier search against names as they were really typed in the 999 Mart ledgers (2022–2026), on the real list
-// of 123 suppliers. The rule that matters: a quick first tap must never pick the WRONG supplier.
+// of known suppliers. The rule that matters: a quick first tap must never pick the WRONG supplier.
 //  - "sure" matches (shown first) must be right;
 //  - something that is a different thing ("SETOR ROKOK" ≠ ROKOK) must not be shown first, and must not be offered
 //    in "Maksudnya yang ini?" when a typed word is not in the name at all.
@@ -30,9 +30,9 @@ const RIGHT = [
   ['ANGSUR PT. OMEGA SUKSES ABADI', 'PT. OMEGA SUKSES ABADI'], ['PT. INDOSARI NIAGA N', 'PT. INDOSARI NIAGA NUSANTARA'],
   ['PT. BINTANG SUKSES MANDIRI', 'PT. BINTAN SUKSES MANDIRI'], ['AIR SANFORD GALON', 'AIR GALON SANFORD'],
   ['PT. KIAN JAYA MAKMUR', 'PT. KIAN JAYA MAKMUR SEMESTA'], ['PT. CIRTA UTAMA D', 'PT. CITRA UTAMA DISTRIBUSINDO RAYA'],
-  ['PT.MULTIBOGA ARYA SENTOSA', 'PT. MULTIBOGA ARYA SENTOSA']
+  ['PT.MULTIBOGA ARYA SENTOSA', 'PT. MULTIBOGA ARYA SENTOSA'], ['SETOR ROKOK', 'SETOR ROKOK'], ['SETORN ROKOK', 'SETOR ROKOK']
 ];
-const OTHER = ['SETOR ROKOK', 'SETOR BANK ROKOK', 'PERMEN', 'DUNIA PLASTIK 28', 'ISI STAPLES', 'PT. COLAMAS INDAH SEJATI',
+const OTHER = ['PERMEN', 'DUNIA PLASTIK 28', 'ISI STAPLES', 'PT. COLAMAS INDAH SEJATI',
   'PT. BINTANG INTAN SARANA', 'DAIRY BAKERY', 'TOP UP PULSA', 'PT. SUMBER CIPTA MULTINIAGA', 'PT. SUMBERSARI PERMAI',
   'PENAMBAHAN MODAL', 'SENDOK TEH', 'BERAS BUMI AYU', 'PT. CIS'];
 
@@ -55,7 +55,7 @@ const OTHER = ['SETOR ROKOK', 'SETOR BANK ROKOK', 'PERMEN', 'DUNIA PLASTIK 28', 
       res.push([f === want || (f === '+ Tambah' && (off.includes(want) || A.searchScored(q).some(x => x.s === want))), `"${q}" → ${want} (first tap: ${f})`]);
     }
     for (const q of OTHER) res.push([firstTap(q) === '+ Tambah', `"${q}" is something else: first tap is "+ Tambah", not ${firstTap(q)}`]);
-    for (const q of ['SETOR ROKOK', 'SETOR BANK ROKOK', 'PT. COLAMAS INDAH SEJATI', 'DUNIA PLASTIK 28', 'PT. SUMBER CIPTA MULTINIAGA'])
+    for (const q of ['PT. COLAMAS INDAH SEJATI', 'DUNIA PLASTIK 28', 'PT. SUMBER CIPTA MULTINIAGA'])
       res.push([!offered(q).length, `"${q}" is not offered as one of ${JSON.stringify(offered(q))} in "Maksudnya yang ini?"`]);
     return res;
   }, { SEED, RIGHT, OTHER });
@@ -65,10 +65,12 @@ const OTHER = ['SETOR ROKOK', 'SETOR BANK ROKOK', 'PERMEN', 'DUNIA PLASTIK 28', 
   await page.click('[data-act="new"]');
   const typeQ = async v => { await page.fill('#q', v); await page.locator('#q').dispatchEvent('input'); };
   await typeQ('setor rokok');
+  out.push([(await page.locator('#sugg button').first().textContent()).trim() === 'SETOR ROKOK', '"setor rokok" → SETOR ROKOK first (its own name, never ROKOK)']);
+  await typeQ('dunia plastik');
   const order = await page.$$eval('#sugg .sugg > *', els => els.map(e => (e.className.includes('sugg-head') ? 'HEAD:' : '') + (e.getAttribute('data-act') || '') + ':' + e.textContent.trim().split('\n')[0]));
-  out.push([order[0].startsWith('addnew') && order[1] === 'HEAD::Mungkin maksudnya:' && /ROKOK/.test(order[2]), `"setor rokok": "+ Tambah" first, ROKOK under "Mungkin maksudnya:" — ${JSON.stringify(order)}`]);
+  out.push([order[0].startsWith('addnew') && order[1] === 'HEAD::Mungkin maksudnya:' && /PLASTIK SAMPAH/.test(order[2]), `"dunia plastik": "+ Tambah" first, PLASTIK SAMPAH only under "Mungkin maksudnya:" — ${JSON.stringify(order)}`]);
   await page.click('[data-act="addnew"]');
-  out.push([(await page.locator('#ov').count()) === 0 && /SETOR ROKOK/.test(await page.textContent('.picked')), '"+ Tambah" saves SETOR ROKOK as its own name, without asking about ROKOK']);
+  out.push([(await page.locator('#ov').count()) === 0 && /DUNIA PLASTIK/.test(await page.textContent('.picked')), '"+ Tambah" saves DUNIA PLASTIK as its own name, without asking about PLASTIK SAMPAH']);
   await page.click('[data-act="unpick"]');
   await typeQ('roti daylis'); await page.click('[data-act="addnew"]');
   out.push([(await page.locator('#ov').count()) === 1 && /ROTI DAILYS/.test(await page.textContent('#ov')), 'a plain typo ("roti daylis") still asks "Maksudnya yang ini? ROTI DAILYS"']);

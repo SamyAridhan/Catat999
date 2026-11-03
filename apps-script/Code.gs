@@ -21,7 +21,7 @@
 var APP_NAME = 'Catat 999';
 var TITLE_PREFIX = '999 MART — ';   // first cell of every month tab the script builds (how it recognises its own tabs)
 var TZ = 'Asia/Jakarta'; // Batam = WIB (UTC+7)
-var SH = { DATA: 'Data', SUP: 'Supplier', LOG: 'Log', SES: 'Sesi' };
+var SH = { DATA: 'Data', SUP: 'Supplier', LOG: 'Log', SES: 'Sesi', ARC: 'Arsip' };
 var AKTIF = 'AKTIF', DIHAPUS = 'DIHAPUS';
 var PAY_FROM = ['Transfer Ibu', 'Uang Kasir', 'Modal'];
 var BULAN = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
@@ -37,6 +37,7 @@ var LIMIT = {
   failsPerDevice: 5,       // wrong passwords before that phone is locked out (15 min)
   failsGlobal: 30, failsGlobalHard: 300,         // wrong passwords from anywhere before all logins pause (15 min)
   writesPerMinute: 20,
+  keepMonths: 14,          // Data keeps this month + 14 before it; older rows (beyond every edit/back-date limit) move to Arsip
   maxBody: 20000
 };
 var HASH_ROUNDS = 1000;
@@ -232,11 +233,13 @@ function list_(user, month) {
   month = String(month || '');
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return { ok: false, error: 'Bulan tidak valid.' };
   var rows = readTable_(SH.DATA, DATA_HEADERS.length);
+  var old = month < archiveCutoff_().slice(0, 7), arc = old ? readArchive_() : [];
   var out = [], total = 0;
-  rows.forEach(function (r) {
+  rows.concat(arc).forEach(function (r, i) {
     if (isDeleted_(r) || fmtDate_(r[C.DATE]).slice(0, 7) !== month) return;
     var o = rowToObj_(r);
-    o.canEdit = canEdit_(user, r);
+    o.canEdit = i < rows.length && canEdit_(user, r);
+    if (i >= rows.length) o.archived = true;
     out.push(o); total += o.amount;
   });
   out.sort(function (a, b) { return a.date !== b.date ? (a.date < b.date ? 1 : -1) : (a.at < b.at ? 1 : -1); });
@@ -270,7 +273,8 @@ function add_(user, e, force) {
   row[C.EDITBY] = ''; row[C.EDITAT] = ''; row[C.STATUS] = AKTIF; row[C.ID] = id;
   writeRow_(sheet_(SH.DATA).getLastRow() + 1, row);
   log_(user, 'Tambah', rowToObj_(row), rupiah_(v.amount) + ' · ' + v.paidFrom + (force ? ' · disimpan walau ada yang mirip' : ''));
-  refreshViews_([v.date.slice(0, 7)]);
+  data.push(row);
+  refreshViews_([v.date.slice(0, 7)], data);   // Data is read once per save: its cost grows with every row ever kept
   return { ok: true, entry: rowToObj_(row) };
 }
 
@@ -283,8 +287,9 @@ function update_(user, id, e, force) {
   var v = validateEntry_(e, user, fmtDate_(r[C.DATE]));
   if (v.error) return { ok: false, code: 'INVALID', error: v.error };
   v.name = supplierName_(v.name, user);
+  var rows = nonBlank_(found.all);
   if (!force) {
-    var dup = findDuplicate_(readTable_(SH.DATA, DATA_HEADERS.length), v, r[C.ID]);
+    var dup = findDuplicate_(rows, v, r[C.ID]);
     if (dup) return dup;
   }
   var before = rowToObj_(r);
@@ -296,7 +301,7 @@ function update_(user, id, e, force) {
   if (!diff) return { ok: true, unchanged: true, entry: after };
   writeRow_(found.index + 2, r);
   log_(user, 'Ubah', after, diff);
-  refreshViews_([oldMonth, v.date.slice(0, 7)]);
+  refreshViews_([oldMonth, v.date.slice(0, 7)], rows);   // r is the same array object as in rows, already updated
   return { ok: true, entry: after };
 }
 
@@ -312,7 +317,7 @@ function remove_(user, id, reason) {
   writeRow_(found.index + 2, r);
   var o = rowToObj_(r);
   log_(user, 'Hapus', o, 'Alasan: ' + reason + ' · ' + rupiah_(o.amount));
-  refreshViews_([o.date.slice(0, 7)]);
+  refreshViews_([o.date.slice(0, 7)], nonBlank_(found.all));
   return { ok: true };
 }
 
@@ -458,8 +463,11 @@ function nameKey_(v) {
 
 // ───────────────────────────── month tabs ─────────────────────────────
 
-function refreshViews_(months) {
-  var rows = readTable_(SH.DATA, DATA_HEADERS.length);
+function refreshViews_(months, rows) {
+  rows = rows || readTable_(SH.DATA, DATA_HEADERS.length);
+  // a month that is (partly) in Arsip is built from both, so a hand edit of an old row can't empty its tab
+  var cut = archiveCutoff_().slice(0, 7);
+  if ((months || []).some(function (m) { return m < cut; })) rows = rows.concat(readArchive_());
   var seen = {};
   (months || []).forEach(function (m) { if (/^\d{4}-\d{2}$/.test(m || '') && !seen[m]) { seen[m] = true; buildMonth_(m, rows); } });
 }
@@ -598,6 +606,8 @@ function setup() {
   var have = ScriptApp.getProjectTriggers().map(function (t) { return t.getHandlerFunction(); });
   if (have.indexOf('onDataEdit') < 0) ScriptApp.newTrigger('onDataEdit').forSpreadsheet(ss).onEdit().create();
   if (have.indexOf('onDataChange') < 0) ScriptApp.newTrigger('onDataChange').forSpreadsheet(ss).onChange().create();
+  // keeps Data small so saves stay fast for years: every 1st of the month at ~03:00, old rows move to Arsip
+  if (have.indexOf('archiveOld') < 0) ScriptApp.newTrigger('archiveOld').timeBased().onMonthDay(1).atHour(3).create();
 
   // order: month tabs first, then Data, Supplier, Log (Sesi hidden at the end)
   [SH.DATA, SH.SUP, SH.LOG, SH.SES].forEach(function (n) { ss.setActiveSheet(ss.getSheetByName(n)); ss.moveActiveSheet(ss.getSheets().length); });
@@ -608,7 +618,7 @@ function setup() {
 }
 
 function refreshAll() {
-  var rows = readTable_(SH.DATA, DATA_HEADERS.length);
+  var rows = readTable_(SH.DATA, DATA_HEADERS.length).concat(readArchive_());
   var months = {};
   rows.forEach(function (r) { var d = fmtDate_(r[C.DATE]); if (d) months[d.slice(0, 7)] = true; });
   // also rebuild existing month tabs (a month may now be empty after deletions)
@@ -623,6 +633,7 @@ function onOpen() {
     .addItem('Atur kata sandi pekerja', 'menuWorkerPassword')
     .addItem('Atur kata sandi admin (Ibu)', 'menuAdminPassword')
     .addItem('Keluarkan semua HP', 'menuLogoutAll')
+    .addItem('Pindahkan data lama ke Arsip', 'menuArchive')
     .addSeparator()
     .addItem('Siapkan / perbaiki struktur', 'setup')
     .addToUi();
@@ -636,6 +647,10 @@ function askPassword_(kind, title) {
   if (r.getSelectedButton() !== ui.Button.OK) return;
   try { setPassword_(kind, r.getResponseText()); ui.alert('Kata sandi disimpan. Semua HP harus masuk lagi.'); }
   catch (err) { ui.alert(err.message); }
+}
+function menuArchive() {
+  var r = archiveOld();
+  SpreadsheetApp.getUi().alert(!r.ok ? r.error : r.moved ? r.moved + ' transaksi lama dipindah ke tab Arsip. Tab bulanan tidak berubah.' : 'Belum ada data lama untuk dipindah.');
 }
 function menuLogoutAll() {
   bumpEpoch_();
@@ -762,9 +777,11 @@ function findRow_(id) {
   var last = sh.getLastRow();
   if (last < 2) return null;
   var rows = sh.getRange(2, 1, last - 1, DATA_HEADERS.length).getValues();
-  for (var i = 0; i < rows.length; i++) if (rows[i][C.ID] === id) return { index: i, row: rows[i] };
+  for (var i = 0; i < rows.length; i++) if (rows[i][C.ID] === id) return { index: i, row: rows[i], all: rows };
   return null;
 }
+
+function nonBlank_(rows) { return rows.filter(function (r) { return r.some(function (c) { return c !== '' && c !== null; }); }); }
 
 function isDeleted_(r) { return String(r[C.STATUS]).trim().toUpperCase() === DIHAPUS; }
 
@@ -774,6 +791,45 @@ function rowToObj_(r) {
     amount: Number(r[C.AMT]) || 0, paidFrom: unquote_(r[C.FROM] || ''), by: unquote_(r[C.BY] || ''), note: unquote_(r[C.NOTE] || ''),
     at: fmtDateTime_(r[C.AT]), editedBy: unquote_(r[C.EDITBY] || ''), editedAt: fmtDateTime_(r[C.EDITAT])
   };
+}
+
+// ───────────────────────────── archive ─────────────────────────────
+// Every save reads the whole Data tab, so its cost grows with every row ever kept. Rows older than every limit
+// (workers 60 days back, Ibu 400 days, edits 3 days) can't be added or changed from the app any more, so they move
+// to an Arsip tab: Data stays at about 15 months (~4,500 rows) forever. Month tabs and Riwayat still show them.
+function archiveCutoff_() {
+  var t = todayStr_(), y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7)) - LIMIT.keepMonths;
+  while (m < 1) { m += 12; y--; }
+  return y + '-' + (m < 10 ? '0' : '') + m + '-01';   // rows dated before this move to Arsip
+}
+function readArchive_() { return ss_().getSheetByName(SH.ARC) ? readTable_(SH.ARC, DATA_HEADERS.length) : []; }
+function archiveSheet_() {
+  var ss = ss_(), sh = ss.getSheetByName(SH.ARC);
+  if (sh) return sh;
+  sh = ensureSheet_(SH.ARC, DATA_HEADERS);
+  sh.hideColumns(C.ID + 1);
+  sh.protect().setDescription('Arsip: transaksi lama (lebih dari setahun). Kalau mengubah di sini, jalankan Catat 999 → Perbarui semua tab.').setWarningOnly(true);
+  return sh;
+}
+/** Moves rows dated before the cutoff from Data to Arsip, values and formats exactly as they are. */
+function archiveOld() {
+  return withLock_(function () {
+    var cutoff = archiveCutoff_();
+    var sh = sheet_(SH.DATA), last = sh.getLastRow(), W = DATA_HEADERS.length;
+    if (last < 2) return { ok: true, moved: 0 };
+    // the Sheet's own sort (oldest first) puts the rows to move together at the top; nothing is re-typed
+    sh.getRange(2, 1, last - 1, W).sort([{ column: C.DATE + 1, ascending: true }, { column: C.AT + 1, ascending: true }]);
+    var dates = sh.getRange(2, C.DATE + 1, last - 1, 1).getValues();
+    var n = 0;
+    while (n < dates.length && dates[n][0] instanceof Date && fmtDate_(dates[n][0]) < cutoff) n++;
+    if (!n) return { ok: true, moved: 0 };
+    var arc = archiveSheet_(), start = arc.getLastRow() + 1;
+    ensureRows_(arc, start + n - 1);
+    sh.getRange(2, 1, n, W).copyTo(arc.getRange(start, 1, n, W));
+    sh.deleteRows(2, n);
+    log_({ name: 'SISTEM', device: 'Otomatis' }, 'Arsip', null, n + ' transaksi sebelum ' + dmy_(cutoff) + ' dipindah ke tab Arsip');
+    return { ok: true, moved: n };
+  });
 }
 
 function withLock_(fn) {
