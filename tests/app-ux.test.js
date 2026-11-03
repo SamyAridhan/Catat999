@@ -158,6 +158,14 @@ const { serve } = require('./static-server');
   check(/Lepas untuk memuat ulang/.test(longPull || '') && await lists() === 1, 'pulling far enough: "Lepas untuk memuat ulang", then Riwayat reloads', `${longPull} / ${await lists()}`);
   check(await page.evaluate(() => getComputedStyle(document.body).overscrollBehaviorY) === 'contain', "the browser's own pull-to-refresh (full page reload) is off");
 
+  // ── toast: short messages on one line, long ones wrap inside the screen ──
+  for (const w of [320, 412]) {
+    await page.setViewportSize({ width: w, height: 740 });
+    const t = await page.evaluate(() => { const r = []; for (const m of ['Data sudah terbaru ✓', 'Server tidak menjawab dengan benar. Coba lagi nanti; kalau terus begini, kabari Ibu.']) { window.CatatApp.toast(m, 'ok'); const e = document.querySelector('#toast'), rc = e.getBoundingClientRect(); r.push({ lines: Math.round((rc.height - 24) / parseFloat(getComputedStyle(e).lineHeight)), l: rc.left, r: innerWidth - rc.right }); } return r; });
+    check(t[0].lines === 1 && t[1].l >= 15 && t[1].r >= 15 && Math.abs(t[1].l - t[1].r) < 2, `${w}px: "Data sudah terbaru ✓" on one line; long messages wrap centred inside the screen`, JSON.stringify(t));
+  }
+  await page.setViewportSize({ width: 360, height: 740 });
+
   // ── viewport: the page is resized for the keyboard (predictable) ──
   check(/interactive-widget=resizes-content/.test(await page.getAttribute('meta[name="viewport"]', 'content')), 'keyboard resizes the page instead of sliding it (interactive-widget)');
 
