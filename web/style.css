@@ -283,13 +283,14 @@ ol.steps { padding-left: 22px; line-height: 1.6; font-size: 17px; }
 .refreshing { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 14px; margin: -4px 0 10px; }
 .spin.dark { width: 16px; height: 16px; border-width: 2px; border-color: var(--line); border-top-color: var(--primary); }
 
-/* ── pull down to refresh ── */
-body { overscroll-behavior-y: contain; }
-#ptr { position: fixed; top: 64px; left: 50%; transform: translate(-50%, 0); z-index: 6; display: none; align-items: center; gap: 8px; background: var(--card); color: var(--muted); border: 1px solid var(--line); border-radius: 22px; padding: 8px 14px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.12); pointer-events: none; }
+/* ── pull down to refresh: the usual round spinner ── */
+html, body { overscroll-behavior-y: contain; }   /* both: Chrome's own pull-to-refresh would reload the page */
+#ptr { position: fixed; top: 56px; left: 50%; transform: translate(-50%, 0); z-index: 6; display: none; width: 42px; height: 42px; border-radius: 50%; background: var(--card); color: var(--muted); box-shadow: 0 2px 8px rgba(0,0,0,.2); align-items: center; justify-content: center; pointer-events: none; }
 #ptr.show { display: flex; }
-#ptr.ready { color: var(--primary-strong); }
-#ptr .icon { width: 20px; height: 20px; transition: transform .15s; }
-#ptr.ready .icon { transform: rotate(180deg); }
+#ptr.ready, #ptr.spinning { color: var(--primary); }
+#ptr .icon { width: 24px; height: 24px; }
+#ptr.spinning .icon { animation: spin .8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { #ptr.spinning .icon { animation: none; } }
 .recent .item { padding: 10px 14px; margin-bottom: 8px; }
 .recent .item .nm { font-size: 16px; }
 .recent .item .amt { font-size: 16px; }

@@ -2321,13 +2321,18 @@
     "7": 200
    },
    "filter": false,
-   "protections": [],
+   "protections": [
+    {
+     "desc": "Dibuat otomatis dari tab Data. Perubahan di sini akan hilang: ubah di tab Data.",
+     "warn": true
+    }
+   ],
    "values": [
     [
      "999 MART — NOVEMBER 2026",
      "",
      "",
-     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "Otomatis dari aplikasi Catat 999. Jangan ubah di sini (akan kembali seperti semula): ubah lewat aplikasi atau di tab Data. Diperbarui 04/02 10:11.",
      "",
      "",
      ""
@@ -4368,13 +4373,18 @@
     "7": 200
    },
    "filter": false,
-   "protections": [],
+   "protections": [
+    {
+     "desc": "Dibuat otomatis dari tab Data. Perubahan di sini akan hilang: ubah di tab Data.",
+     "warn": true
+    }
+   ],
    "values": [
     [
      "999 MART — OKTOBER 2026",
      "",
      "",
-     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "Otomatis dari aplikasi Catat 999. Jangan ubah di sini (akan kembali seperti semula): ubah lewat aplikasi atau di tab Data. Diperbarui 04/02 10:11.",
      "",
      "",
      ""
@@ -4885,13 +4895,18 @@
     "7": 200
    },
    "filter": false,
-   "protections": [],
+   "protections": [
+    {
+     "desc": "Dibuat otomatis dari tab Data. Perubahan di sini akan hilang: ubah di tab Data.",
+     "warn": true
+    }
+   ],
    "values": [
     [
      "999 MART — SEPTEMBER 2026",
      "",
      "",
-     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "Otomatis dari aplikasi Catat 999. Jangan ubah di sini (akan kembali seperti semula): ubah lewat aplikasi atau di tab Data. Diperbarui 04/02 10:11.",
      "",
      "",
      ""
@@ -5402,13 +5417,18 @@
     "7": 200
    },
    "filter": false,
-   "protections": [],
+   "protections": [
+    {
+     "desc": "Dibuat otomatis dari tab Data. Perubahan di sini akan hilang: ubah di tab Data.",
+     "warn": true
+    }
+   ],
    "values": [
     [
      "999 MART — SEPTEMBER 2025",
      "",
      "",
-     "Otomatis dari aplikasi Catat 999. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui 04/02 10:11.",
+     "Otomatis dari aplikasi Catat 999. Jangan ubah di sini (akan kembali seperti semula): ubah lewat aplikasi atau di tab Data. Diperbarui 04/02 10:11.",
      "",
      "",
      ""

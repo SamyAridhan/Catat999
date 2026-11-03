@@ -146,17 +146,25 @@ const { serve } = require('./static-server');
     const mk = y => new Touch({ identifier: 1, target: t, clientX: 180, clientY: y });
     t.dispatchEvent(new TouchEvent('touchstart', { touches: [mk(120)], bubbles: true }));
     for (let y = 120; y <= 120 + dy; y += 20) t.dispatchEvent(new TouchEvent('touchmove', { touches: [mk(y)], bubbles: true }));
-    const shown = document.querySelector('#ptr') && document.querySelector('#ptr').textContent;
+    const e = document.querySelector('#ptr'), during = e ? e.className : '';
     t.dispatchEvent(new TouchEvent('touchend', { touches: [], bubbles: true }));
-    return shown;
+    return { during, after: e ? e.className : '' };
   }, dy);
-  const shortPull = await pull(40);
+  const shortPull = await pull(60);
   await page.waitForTimeout(300);
-  check(await lists() === 0 && /Tarik ke bawah/.test(shortPull || ''), 'a short pull only shows "Tarik ke bawah untuk memuat ulang"', shortPull);
-  const longPull = await pull(140);
-  await page.waitForTimeout(500);
-  check(/Lepas untuk memuat ulang/.test(longPull || '') && await lists() === 1, 'pulling far enough: "Lepas untuk memuat ulang", then Riwayat reloads', `${longPull} / ${await lists()}`);
-  check(await page.evaluate(() => getComputedStyle(document.body).overscrollBehaviorY) === 'contain', "the browser's own pull-to-refresh (full page reload) is off");
+  check(await lists() === 0 && /show/.test(shortPull.during) && !/ready/.test(shortPull.during) && shortPull.after === '', 'a short pull: the circle follows the finger, then goes away without refreshing', JSON.stringify(shortPull));
+  const longPull = await pull(200);
+  check(/ready/.test(longPull.during) && /spinning/.test(longPull.after), 'pulling far enough: the circle turns green, then keeps spinning after letting go', JSON.stringify(longPull));
+  await page.waitForFunction(() => !document.querySelector('#ptr.spinning'), null, { timeout: 8000 });
+  check(await lists() === 1 && await page.evaluate(() => window.CatatApp.state.screen) === 'history', '…Riwayat reloads once, and you stay on Riwayat', `${await lists()} / ${await page.evaluate(() => window.CatatApp.state.screen)}`);
+  check(await page.evaluate(() => getComputedStyle(document.documentElement).overscrollBehaviorY === 'contain' && getComputedStyle(document.body).overscrollBehaviorY === 'contain'), "Chrome's own pull-to-refresh (reloads the page → lands on home) is off on the page root too");
+  // the same on home
+  await page.tap('.bar .back'); await page.waitForSelector('.tile[data-act="new"]');
+  await page.evaluate(() => { const real = window.CatatMockApi.handle; window.__boots = 0; window.CatatMockApi.handle = b => { if (b.action === 'boot') window.__boots++; return real(b); }; });
+  await pull(200);
+  await page.waitForFunction(() => !document.querySelector('#ptr.spinning'), null, { timeout: 8000 });
+  check(await boots() === 1 && await page.evaluate(() => window.CatatApp.state.screen) === 'home', 'pull on home: refreshes once, stays on home');
+  await page.tap('.tile[data-act="history"]'); await page.waitForSelector('#hlist .item.tap');
 
   // ── toast: short messages on one line, long ones wrap inside the screen ──
   for (const w of [320, 412]) {

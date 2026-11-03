@@ -250,6 +250,8 @@ req('R24', 'month tab: made on the first save of a month, title, summary per pay
   assert.ok(supHead > 0, 'supplier totals');
   const rokok = t.slice(supHead).find(r => r[1] === 'ROKOK');
   assert.strictEqual(rokok[3], sum(r => r[C.NAME] === 'ROKOK'));
+  assert.ok(tab(ym).protections.some(p => p.warn && /ubah di tab Data/.test(p.desc)), 'warns before a hand edit (changes there would come back)');
+  assert.match(String(t[0][3]), /Jangan ubah di sini/);
 });
 req('R25', 'month tabs: one per month, newest on the far left, after an older month was saved first', () => {
   const names = env.ss.getSheets().map(s => s.getName());

@@ -497,6 +497,10 @@ function buildMonth_(ym, rows) {
     if (!list.length) return;              // never create an empty tab
     sh = ss.insertSheet(name, monthSheetIndex_(ss, ym));
   }
+  // a month tab is rebuilt from Data on every save: changes made here would come back, so warn before any edit
+  if (!sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).length) {
+    sh.protect().setDescription('Dibuat otomatis dari tab Data. Perubahan di sini akan hilang: ubah di tab Data.').setWarningOnly(true);
+  }
   sh.clear();
 
   var W = 7;
@@ -512,7 +516,7 @@ function buildMonth_(ym, rows) {
 
   var out = [], kinds = [];
   function push(arr, kind) { arr = arr.slice(); while (arr.length < W) arr.push(''); out.push(arr); kinds.push(kind || ''); }
-  push([TITLE_PREFIX + BULAN_PANJANG[m - 1] + ' ' + y, '', '', 'Otomatis dari aplikasi ' + APP_NAME + '. Untuk mengubah: lewat aplikasi atau tab Data. Diperbarui ' +
+  push([TITLE_PREFIX + BULAN_PANJANG[m - 1] + ' ' + y, '', '', 'Otomatis dari aplikasi ' + APP_NAME + '. Jangan ubah di sini (akan kembali seperti semula): ubah lewat aplikasi atau di tab Data. Diperbarui ' +
     Utilities.formatDate(new Date(), TZ, 'dd/MM HH:mm') + '.'], 'title');
   push(['Total', 'Transfer Ibu', 'Uang Kasir', 'Modal', 'Lainnya', 'Transaksi'], 'sumlabel');
   push([total, byFrom['Transfer Ibu'], byFrom['Uang Kasir'], byFrom['Modal'], byFrom['Lainnya'], list.length], 'sumvalue');

@@ -586,10 +586,10 @@
     var box = $('#hlist'); if (box) box.innerHTML = histList(ym, S.hist[ym]); else render();
   }
   function loadMonth(ym) {
-    if (loading[ym]) return;
+    if (loading[ym]) return loading[ym];
     loading[ym] = true;
     redrawList(ym);   // show "Memperbarui…" over the list it already has
-    api('list', { month: ym }).then(function (r) {
+    loading[ym] = api('list', { month: ym }).then(function (r) {
       loading[ym] = false;
       if (authFail(r)) return;
       if (!r.ok) { failedAt[ym] = Date.now(); loadFailed(ym, r.error || 'Gagal memuat riwayat.'); return; }
@@ -597,6 +597,7 @@
       S.hist[ym] = { entries: r.entries, total: r.total, at: Date.now() }; save('hist', trimHist(ym));
       redrawList(ym);
     }, function (e) { loading[ym] = false; failedAt[ym] = Date.now(); loadFailed(ym, e && e.server ? 'Server sedang gangguan.' : 'Tidak ada koneksi internet.'); });
+    return loading[ym];
   }
   function loadFailed(ym, msg) {
     var c = S.hist[ym];
@@ -895,37 +896,50 @@
   function doRefresh() {
     var btn = $('.bar-btn'); if (btn) { btn.classList.add('busy'); btn.disabled = true; }
     var before = S.boot && S.boot.fetchedAt;
-    refresh().then(function () {
+    return refresh().then(function () {
       if (S.boot && S.boot.fetchedAt !== before) toast('Data sudah terbaru ✓', 'ok');
       var b2 = $('.bar-btn'); if (b2) { b2.classList.remove('busy'); b2.disabled = false; }
       flush();
     });
   }
-  function reloadHistory() { var ym = curMonth(); failedAt[ym] = 0; var c = S.hist[ym]; if (c && c.entries) c.at = 0; if (!loading[ym]) loadMonth(ym); refresh(true); }
-  // Pull down at the top of home or Riwayat to refresh, like other apps. (The browser's own pull-to-refresh would
-  // reload the whole page, so it is switched off in the CSS with overscroll-behavior.)
-  var ptr = { y0: null, dy: 0 };
-  function ptrShow(dy) {
-    var el = $('#ptr');
-    if (!el) { el = document.createElement('div'); el.id = 'ptr'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
-    var ready = dy > 80;
-    el.innerHTML = icon('refresh') + '<span>' + (ready ? 'Lepas untuk memuat ulang' : 'Tarik ke bawah untuk memuat ulang') + '</span>';
-    el.className = 'show' + (ready ? ' ready' : '');
-    el.style.transform = 'translate(-50%, ' + Math.min(dy, 110) * 0.6 + 'px)';
+  function reloadHistory() {
+    var ym = curMonth(); failedAt[ym] = 0; var c = S.hist[ym]; if (c && c.entries) c.at = 0;
+    refresh(true);
+    return loadMonth(ym) || Promise.resolve();
   }
-  function ptrHide() { var el = $('#ptr'); if (el) { el.className = ''; el.style.transform = ''; } }
+  // Pull down at the top of home or Riwayat to refresh: the usual round spinner follows the finger (with some
+  // resistance), turns as you pull, and keeps spinning after you let go until the new data is in. Chrome's own
+  // pull-to-refresh (which reloads the whole page and lands on home) is switched off in the CSS.
+  var ptr = { y0: null, dy: 0, busy: false };
+  var PTR_GO = 72;   // how far (after resistance) counts as "refresh"
+  function ptrEl() {
+    var el = $('#ptr');
+    if (!el) { el = document.createElement('div'); el.id = 'ptr'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = icon('refresh'); document.body.appendChild(el); }
+    return el;
+  }
+  function ptrShow(dy) {
+    var el = ptrEl(), pull = Math.min(dy * 0.5, 110);   // resistance: the circle moves half as far as the finger
+    el.className = 'show' + (pull >= PTR_GO ? ' ready' : '');
+    el.style.opacity = String(Math.min(pull / PTR_GO, 1));
+    el.style.transform = 'translate(-50%, ' + pull + 'px) rotate(' + Math.round(pull * 4) + 'deg)';
+  }
+  function ptrHide() { var el = $('#ptr'); if (el) { el.className = ''; el.style.transform = ''; el.style.opacity = ''; } }
   document.addEventListener('touchstart', function (e) {
-    ptr.y0 = (S.screen === 'home' || S.screen === 'history') && !$('#ov') && window.scrollY <= 0 && e.touches.length === 1 ? e.touches[0].clientY : null; ptr.dy = 0;
+    ptr.y0 = !ptr.busy && (S.screen === 'home' || S.screen === 'history') && !$('#ov') && window.scrollY <= 0 && e.touches.length === 1 ? e.touches[0].clientY : null; ptr.dy = 0;
   }, { passive: true });
   document.addEventListener('touchmove', function (e) {
     if (ptr.y0 === null) return;
     ptr.dy = e.touches[0].clientY - ptr.y0;
-    if (ptr.dy > 12 && window.scrollY <= 0) ptrShow(ptr.dy); else ptrHide();
+    if (ptr.dy > 8 && window.scrollY <= 0) ptrShow(ptr.dy); else ptrHide();
   }, { passive: true });
   document.addEventListener('touchend', function () {
     if (ptr.y0 === null) return;
-    var go = ptr.dy > 80 && window.scrollY <= 0; ptr.y0 = null; ptrHide();
-    if (go) { if (S.screen === 'history') reloadHistory(); else doRefresh(); }
+    var go = ptr.dy * 0.5 >= PTR_GO && window.scrollY <= 0; ptr.y0 = null;
+    if (!go) { ptrHide(); return; }
+    var el = ptrEl(); ptr.busy = true;
+    el.className = 'show spinning'; el.style.opacity = '1'; el.style.transform = 'translate(-50%, ' + PTR_GO + 'px)';
+    var done = function () { ptr.busy = false; ptrHide(); };
+    (S.screen === 'history' ? reloadHistory() : doRefresh()).then(done, done);
   }, { passive: true });
 
   // ───────────── install ─────────────
