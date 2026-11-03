@@ -10,15 +10,17 @@ What was checked before release, what was found, and what was fixed. Every bug i
 | Backend edge cases | `tests/backend.edge.test.js` (27) | Exact limits and boundaries (60/400 days, 3 days, 8–64-char IDs, 30-char invoices, 100-char passwords …) |
 | Backend snapshot | `tests/backend.snapshot.test.js` (121 results) | One long "day in the life" with a frozen clock. Every answer, message, cell, colour and log line is compared with an approved copy. |
 | Backend properties | `tests/backend.property.test.js` (11) | Thousands of random inputs and random action sequences (fast-check). Rules that must always hold: no formulas get in, totals add up, the log is complete … |
-| App logic | `tests/app-logic.test.js` (134) | Amount in words, supplier search and typos, form rules, dates, Riwayat totals and cache |
+| App logic | `tests/app-logic.test.js` (141) | Amount in words, supplier search and typos, form rules, dates, Riwayat totals and cache |
 | App click-through | `tests/ui.test.js` (72) | Full flows on a phone (360×740) and a laptop (1366×768) |
 | Screen walkthrough | `tests/ui-walkthrough.js` | Every screen at 320 / 360 / 412 px and on a laptop: overflow, cut-off text, tap-target size, axe-core accessibility, screenshots |
 | Keyboard | `tests/ui-keyboard.test.js` (12) | Ibu on a laptop with keyboard only: Tab / Enter / Escape, dialogs keep focus |
-| Regressions | `tests/ui-regressions.test.js` (5) | The app bugs found below stay fixed |
+| App plumbing | `tests/app-flows.test.js` (110) | Talking to the server, sending waiting entries, saving from Cek Lagi, deferred logouts, double taps, with every server answer scripted |
+| Regressions | `tests/ui-regressions.test.js` (6) | The app bugs found below stay fixed |
 | Hand edits | `tests/backend.sheet.test.js` (20) | Ibu editing the Sheet: pasted rows, typed dates/amounts, moved months, who edited, tab rebuilding |
 | Demo = real | `tests/contract.test.js` (51) | Demo mode answers exactly like the real backend, so app tests mean something |
 | End-to-end | `tests/e2e-real-backend.test.js` (22) | The real app (not demo) against the real backend code: save, duplicate, offline, server hiccup, edit, delete |
 | Monkey | `tests/ui-monkey.js` | A "random user" taps, types junk, presses back and switches the internet on and off, with sanity checks after every step. 1,800+ steps per run. |
+| **Requirements** | `tests/acceptance.backend.test.js` (43) + `tests/acceptance.ui.test.js` (57) | One check per requirement in [REQUIREMENTS.md](REQUIREMENTS.md), on the backend and on a phone with the real app and backend |
 | Mutation testing | Stryker (`npm run mutate:backend` / `mutate:app`) | Plants deliberate small bugs in the code and checks whether the tests notice |
 
 ## Bugs found and fixed
@@ -68,6 +70,13 @@ What was checked before release, what was found, and what was fixed. Every bug i
 - **"Perlu dicek" banner:** it said "maybe a duplicate" even for entries the server had refused for another reason.
 - **After saving:** the done screen showed what the phone sent, not what the server stored (cleaned supplier name).
 
+### Found by mutation testing and reading the code (morning of 3 Nov)
+- **Riwayat stuck loading:** opening a 4th older month loaded it and threw it away at once (the phone keeps 3 months), so the spinner never ended.
+- **Double login:** pressing Enter again while logging in sent a second login, using up the 5 tries twice as fast.
+- **Double delete:** tapping another reason while a delete was running sent a second delete.
+- A background refresh redrew the home screen under an open dialog, so focus couldn't return to the button.
+- Edited entries showed "Diubah oleh" without the time until the next refresh.
+
 ### Found by the code review (two independent reviewers)
 - A deferred logout never finished if the waiting entry was thrown away.
 - The server-date correction stayed active after the phone clock was fixed (it's now trusted for 12 h only).
@@ -100,10 +109,16 @@ What was checked before release, what was found, and what was fixed. Every bug i
 - The duplicate warning in Riwayat made "save anyway" the main button. It's now "Buang, sudah dicatat".
 
 ## Mutation testing scores
-| Part | First run | Now |
+Stryker plants small deliberate bugs, such as flipping a `<`, deleting a line or emptying a message, and runs the tests to see which bugs they catch. Low scores pointed to the weakest tests. Each gap was closed with new checks, and the run was repeated.
+
+| Part | First run | Final |
 |---|---|---|
-| Backend (`Code.gs`) | 56% | see final run below |
-| App (`app.js`) | — | see final run below |
+| Backend (`Code.gs`, 2,029 planted bugs) | 56% | **91%** |
+| App: rules, search, dates, cache (`app.js`) | 52% | **82%** (more checks were added after this run) |
+| App: talking to the server, waiting entries (`app.js` `api` / `flush`) | 44% | **88%** |
+| App: saving from Cek Lagi (`app.js` `doSave` / `saved`) | 52% | **93%** |
+
+The bugs the tests still miss are mostly harmless. Some behave the same as the real code, such as a pattern missing its start anchor where a later check rejects the input anyway. Others are wording or timer details that don't change what a worker can do.
 
 ## Still to check by hand
 These need the real environment and can't be tested here:
