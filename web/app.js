@@ -60,7 +60,7 @@
   function shortDate(s) { var d = parse(s); return d.getDate() + ' ' + BLN[d.getMonth()]; }
   function dayHead(s) { var d = parse(s); return HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BLN[d.getMonth()]; }
   function monthName(ym) { var d = parse(ym + '-01'); return BULAN[d.getMonth()] + ' ' + d.getFullYear(); }
-  function hhmm(s) { return s ? s.slice(11, 16).replace(':', '.') : ''; }
+  function hhmm(s) { return s ? s.slice(11, 16) : ''; }   // 11:52 — with a dot (11.52) it reads like a version number
   function backDays() { return (S.boot && S.boot.limits && S.boot.limits.backDays) || 60; }
   function editDays() { return (S.boot && S.boot.limits && S.boot.limits.editDays) || 3; }
   function isAdmin() { return S.user && S.user.role === 'ADMIN'; }
@@ -569,7 +569,7 @@
         h += '<div class="group-head"><span>' + esc(dayHead(day)) + '</span><span>' + rp(dt) + '</span></div>';
       }
       h += '<button class="item tap" data-act="detail" data-v="' + esc(e.id) + '"><div class="top"><div class="nm">' + esc(e.name) + '</div><div class="amt">' + rp(e.amount) + '</div></div>' +
-        '<div class="meta">' + esc(e.paidFrom) + (e.invoice ? ' · Inv ' + esc(e.invoice) : '') + ' · ' + esc(e.by) + ' ' + esc(hhmm(e.at)) + (e.editedBy ? ' · <i>diubah</i>' : '') + '</div></button>';
+        '<div class="meta">' + esc(e.paidFrom) + (e.invoice ? ' · Inv ' + esc(e.invoice) : '') + ' · ' + esc(e.by) + ' · ' + esc(hhmm(e.at)) + (e.editedBy ? ' · <i>diubah</i>' : '') + '</div></button>';
     });
     return h;
   }
@@ -660,6 +660,7 @@
   function closeSheet(keepReturn) {
     var o = $('#ov'); if (!o) return;
     o.remove();
+    if (S.screen === 'history') { var box = $('#hlist'); if (box) box.innerHTML = histList(curMonth(), S.hist[curMonth()]); }
     if (!keepReturn && sheetReturn && document.body.contains(sheetReturn)) { try { sheetReturn.focus({ preventScroll: true }); } catch (e) { } }
   }
 
@@ -700,7 +701,7 @@
   function similarSheet(q, list) {
     openSheet('<h2>Maksudnya yang ini?</h2><p>Nama ini mirip dengan yang sudah ada. Pilih yang sama supaya catatan rapi.</p><div class="stack">' +
       list.map(function (n) { return '<button class="btn outline" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') +
-      '<button class="btn ghost" data-v="">Bukan, pakai nama baru "' + esc(q) + '"</button></div>', function (b) {
+      '<button class="btn outline" data-v="">Bukan, pakai nama baru "' + esc(q) + '"</button></div>', function (b) {
         var n = b.getAttribute('data-v'); closeSheet();
         S.form.name = n || q; S.form.isNew = !n; S.form.q = ''; S.form.errors.name = ''; restep('st-name');
       });
@@ -714,7 +715,7 @@
       rows.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>' +
       (e.canEdit ? '<div class="row"><button class="btn outline" data-v="edit">Ubah</button><button class="btn danger-outline" data-v="del">Hapus</button></div>'
         : '<div class="banner info">' + (e.archived ? 'Transaksi lama, sudah dipindah ke tab Arsip. Kalau perlu diubah, ubah langsung di spreadsheet.' : 'Sudah lebih dari ' + editDays() + ' hari. Hanya Ibu yang bisa mengubah.') + '</div>') +
-      '<button class="btn ghost" data-v="close">Tutup</button>', function (b) {
+      '<button class="btn outline" data-v="close">Tutup</button>', function (b) {
         var v = b.getAttribute('data-v'); closeSheet();
         if (v === 'edit') { S.form = newForm(e); go('form'); }
         else if (v === 'del') deleteSheet(e);
@@ -723,7 +724,7 @@
   function deleteSheet(e) {
     openSheet('<h2>Hapus transaksi ini?</h2><div class="card"><b>' + esc(e.name) + '</b><div class="meta">' + rp(e.amount) + ' · ' + esc(shortDate(e.date)) + '</div></div><p>Kenapa dihapus?</p>' +
       '<div class="stack"><button class="btn outline" data-v="Salah input">Salah input</button><button class="btn outline" data-v="Tercatat dua kali">Tercatat dua kali</button>' +
-      '<button class="btn outline" data-v="Lainnya">Lainnya</button><button class="btn ghost" data-v="">Batal</button></div>', function (b) {
+      '<button class="btn outline" data-v="Lainnya">Lainnya</button><button class="btn outline" data-v="">Batal</button></div>', function (b) {
         var reason = b.getAttribute('data-v'); if (!reason) { closeSheet(); return; }
         var all = b.parentNode.querySelectorAll('button'); for (var i = 0; i < all.length; i++) all[i].disabled = true;   // one delete, even with a shaky tap
         b.innerHTML = '<span class="spin"></span> Menghapus…';
@@ -958,7 +959,7 @@
     patchCache: patchCache, histList: histList, pendList: pendList, isNet: isNet, trimHist: trimHist,
     render: render, collect: collect, renderSugg: renderSugg, toast: toast, uid: uid, shiftNow: shiftNow, daysBetween: daysBetween,
     phoneToday: phoneToday, isAdmin: isAdmin, editDays: editDays, backDays: backDays, loadMonth: loadMonth, findEntry: findEntry,
-    curMonth: curMonth, outdated: outdated, step: step, restep: restep, addToCache: addToCache, recentList: recentList,
+    curMonth: curMonth, outdated: outdated, step: step, restep: restep, addToCache: addToCache, recentList: recentList, isLoading: function (ym) { return !!loading[ym || curMonth()]; },
     searchScored: searchScored, SURE: SURE, wordsFit: wordsFit, api: api, refresh: refresh, flush: flush, doSave: doSave, endLaterSessions: endLaterSessions, authFail: authFail, SERVER_MSG: SERVER_MSG
   };
 })();

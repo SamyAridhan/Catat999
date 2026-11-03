@@ -114,7 +114,7 @@ const ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
     eq(A.longDate('2026-11-02'), 'Senin, 2 Nov 2026', 'longDate');
     eq(A.shortDate('2026-08-17'), '17 Agu', 'shortDate');
     eq(A.monthName('2026-10'), 'Oktober 2026', 'monthName');
-    eq(A.hhmm('2026-11-02T09:05:00'), '09.05', 'hhmm');
+    eq(A.hhmm('2026-11-02T09:05:00'), '09:05', 'hhmm (colon, not a dot that reads like a version)');
     eq(A.hhmm(''), '', 'hhmm empty');
     eq(/^\d{4}-\d{2}-\d{2}$/.test(t), true, 'today format');
 
@@ -200,7 +200,7 @@ const ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
     eq(d.querySelector('.card.total .big').textContent, 'Rp 1.750', 'histList: month total');
     eq(d.querySelector('.card.total .hint').textContent, 'Total Mei 2026 · 3 transaksi', 'histList: count');
     eq(d.querySelectorAll('i').length, 1, 'histList: names escaped (only our own "diubah" tag is markup)');
-    eq(d.querySelector('[data-v="r1"] .meta').textContent, 'Modal · Inv INV9 · ANI 09.30', 'histList: row meta');
+    eq(d.querySelector('[data-v="r1"] .meta').textContent, 'Modal · Inv INV9 · ANI · 09:30', 'histList: row meta');
     S.query = 'rokok';
     d.innerHTML = A.histList('2026-05', { entries: rows, at: now });
     eq(d.querySelectorAll('.item.tap').length, 1, 'histList: search by name');

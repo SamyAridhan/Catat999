@@ -193,7 +193,7 @@ const rowBy = (f) => data().find(f);
   await typeIn('#hq', '');
   await tapText('#hlist .item.tap', 'AQUA'); await page.waitForSelector('#ov');
   const det = await text('#ov');
-  check('U15', 'tapping an entry shows who recorded it and when, with Ubah and Hapus', /Dicatat oleh/.test(det) && /BUJANG/.test(det) && /\d\d\.\d\d/.test(det) && /Ubah/.test(det) && /Hapus/.test(det), det);
+  check('U15', 'tapping an entry shows who recorded it and when, with Ubah and Hapus', /Dicatat oleh/.test(det) && /BUJANG/.test(det) && /\d\d:\d\d/.test(det) && /Ubah/.test(det) && /Hapus/.test(det), det);
   check('U15', 'text typed into a note is shown as text, never run as code', det.includes('<img src=x') && !(await page.evaluate(() => window.__hacked)));
   await page.keyboard.press('Escape');
   // older than 3 days: only Ibu

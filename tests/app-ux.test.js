@@ -113,9 +113,20 @@ const { serve } = require('./static-server');
   check(/YAKULT/.test(firstList) && /Memperbarui/.test(firstList), 'Riwayat: the new entry shows at once, with "Memperbarui…" while it checks', firstList.slice(0, 120));
   await page.waitForFunction(() => !/Memperbarui/.test(document.querySelector('#hlist').textContent), null, { timeout: 5000 });
   check(true, '"Memperbarui…" goes away when done');
+  // a pop-up open while Riwayat finishes loading must not leave "Memperbarui…" stuck on the screen
+  await page.evaluate(() => { const real = window.CatatMockApi.handle; window.CatatMockApi.handle = b => b.action === 'list' ? new Promise(r => setTimeout(r, 900)).then(() => real(b)) : real(b); });
+  await page.tap('.bar-btn');
+  await page.waitForFunction(() => /Memperbarui/.test(document.querySelector('#hlist').textContent));
+  await page.tap('#hlist .item.tap'); await page.waitForSelector('#ov');
+  check(await page.locator('#ov button', { hasText: 'Tutup' }).evaluate(b => b.classList.contains('outline')), 'detail pop-up: "Tutup" is a normal outlined button');
+  check(/\d\d:\d\d/.test(await page.textContent('#ov')) && !/\d\d\.\d\d(?!\d)/.test((await page.textContent('#ov')).replace(/Rp [\d.]+/g, '')), 'times read 11:52 (not 11.52, which looks like a version)');
+  await page.waitForFunction(() => !window.CatatApp.isLoading(), null, { timeout: 10000 });   // finished while the pop-up was open
+  await page.tap('#ov button:has-text("Tutup")');
+  check(!/Memperbarui/.test(await page.textContent('#hlist')), 'after closing the pop-up the list is up to date, not stuck on "Memperbarui…"');
   check(await page.locator('.bar .back svg').count() === 1 && await page.getAttribute('.bar .back', 'aria-label') === 'Kembali', 'back button: a real arrow icon, named "Kembali"');
   check(await attr('#hq', 'enterkeyhint') === 'search', 'Riwayat search: Enter "search"');
   await page.evaluate(() => { window.CatatApp.state.hist = {}; });
+  await page.waitForFunction(() => !window.CatatApp.isLoading(), null, { timeout: 10000 });
   await page.tap('.bar-btn');
   check(/Memuat riwayat/.test(await page.textContent('#hlist')) || /Memperbarui/.test(await page.textContent('#hlist')), 'Riwayat refresh with nothing cached: "Memuat riwayat…"');
   await page.waitForSelector('#hlist .item.tap');
