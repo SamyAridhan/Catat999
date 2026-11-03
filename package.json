@@ -7,7 +7,7 @@
     "test:ui": "node tests/ui.test.js",
     "mutate:backend": "mkdir -p mutation-src && cp apps-script/Code.gs mutation-src/Code.js && stryker run stryker.backend.json",
     "mutate:app": "stryker run stryker.app-logic.json && stryker run stryker.app-flows.json",
-    "test": "npm run test:backend && node tests/app-logic.test.js && node tests/app-flows.test.js && node tests/search-real-names.test.js && node tests/app-ux.test.js && node tests/app-render.test.js && node tests/ui.test.js && node tests/ui-regressions.test.js && node tests/ui-keyboard.test.js && TZ=Asia/Jakarta node tests/e2e-real-backend.test.js && npm run test:acceptance",
+    "test": "npm run test:backend && node tests/app-logic.test.js && node tests/app-flows.test.js && node tests/search-real-names.test.js && node tests/app-ux.test.js && node tests/app-update.test.js && node tests/app-render.test.js && node tests/ui.test.js && node tests/ui-regressions.test.js && node tests/ui-keyboard.test.js && TZ=Asia/Jakarta node tests/e2e-real-backend.test.js && npm run test:acceptance",
     "test:walkthrough": "node tests/ui-walkthrough.js reports/walkthrough",
     "mutate:app-full": "stryker run stryker.app.json",
     "test:acceptance": "TZ=Asia/Jakarta node tests/acceptance.backend.test.js && TZ=Asia/Jakarta node tests/acceptance.ui.test.js"

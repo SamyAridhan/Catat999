@@ -107,7 +107,7 @@ Ibu doesn't need to do anything. **Catat 999 → Pindahkan data lama ke Arsip** 
 
 ## Updating later
 - **Backend:** edit the code, then **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same.
-- **App:** change the files and bump `VERSION` in `web/sw.js` so phones pick up the update.
+- **App:** change the files and push to `main`. Each publish stamps a new version, and installed phones update by themselves: when the app comes back to the front, or within 30 minutes. It never reloads in the middle of a form, and it shows *"Aplikasi sudah diperbarui ✓"*.
 
 ## Limits
 - Workers can date an entry up to 60 days back; Ibu, up to about 13 months. No future dates.

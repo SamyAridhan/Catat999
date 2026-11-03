@@ -234,6 +234,7 @@
   function go(screen, replace) {
     if (S.screen === 'done') replace = true; // the success screen is never a back-button target
     S.screen = screen;
+    if (swReload && swApply()) return;   // a new version arrived while the form was open: load it now
     var tt = $('#toast'); if (tt) tt.className = 'toast';
     try { history[replace ? 'replaceState' : 'pushState']({ s: screen }, '', location.pathname + location.search); } catch (e) { }
     render(); window.scrollTo(0, 0);
@@ -256,7 +257,7 @@
       askLeaveForm(); return;
     }
     if (!S.token) to = 'login';
-    S.screen = to; render(); window.scrollTo(0, 0);
+    S.screen = to; if (swReload && swApply()) return; render(); window.scrollTo(0, 0);
   });
 
   // ───────────── render ─────────────
@@ -956,14 +957,32 @@
   var installEvt = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; });
   window.addEventListener('appinstalled', function () { S.installHidden = true; save('installHidden', true); installEvt = null; if (S.screen === 'home') render(); });
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    navigator.serviceWorker.register('sw.js').catch(function () { });
-    var reloaded = false;
-    navigator.serviceWorker.addEventListener('controllerchange', function () { if (!reloaded && ['form', 'review'].indexOf(S.screen) < 0) { reloaded = true; location.reload(); } });
+  // Updates arrive by themselves: the app looks for a new version whenever it comes back to the front (phones rarely
+  // fully close an installed app) and every 30 minutes. A new version takes over at once; the page reloads straight
+  // away, or, while a form is being filled in, as soon as the worker is back on home. (?sw=1 turns it on for tests.)
+  var swReg = null, swReload = false, swReloaded = false;
+  function swApply() {
+    if (swReloaded || ['form', 'review', 'done'].indexOf(S.screen) >= 0 || $('#ov')) return false;   // never mid-form, never over "Berhasil disimpan"
+    swReloaded = true;
+    try { sessionStorage.setItem('c9.updated', '1'); } catch (e) { }
+    location.reload();
+    return true;
+  }
+  function swCheck() { if (swReg) swReg.update().catch(function () { }); }
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || /[?&]sw=1/.test(location.search))) {
+    var hadController = !!navigator.serviceWorker.controller;   // the very first install isn't an "update"
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (r) { swReg = r; }).catch(function () { });
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController) { hadController = true; return; }
+      swReload = true; swApply();
+    });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) swCheck(); });
+    setInterval(swCheck, 30 * 60 * 1000);
   }
 
   // ───────────── start ─────────────
   if (DEMO) document.body.insertAdjacentHTML('afterbegin', '<div class="demo">MODE COBA — belum tersambung ke spreadsheet</div>');
+  try { if (sessionStorage.getItem('c9.updated')) { sessionStorage.removeItem('c9.updated'); setTimeout(function () { toast('Aplikasi sudah diperbarui ✓', 'ok'); }, 300); } } catch (e) { }
   S.screen = S.token ? 'home' : 'login';
   try { history.replaceState({ s: S.screen }, '', location.pathname + location.search); } catch (e) { }
   render();

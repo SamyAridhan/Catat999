@@ -21,6 +21,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # every publish is a new app version, so installed phones update by themselves (no manual bump)
+      - name: Stamp the version
+        run: sed -i "s/^var VERSION = '[^']*';/var VERSION = 'catat999-${GITHUB_SHA::7}';/" web/sw.js && grep -n "^var VERSION" web/sw.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
