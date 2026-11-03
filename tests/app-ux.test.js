@@ -51,6 +51,12 @@ const { serve } = require('./static-server');
   await page.keyboard.press('Escape');
   await page.tap('.install [data-act="installHide"]');
   check(await page.locator('.install').count() === 0, '× hides the card');
+  check(/ketuk nama Anda di kanan atas/.test(await page.textContent('#toast')), '…and says where to find it again');
+  await page.tap('.bar button.who'); await page.waitForSelector('#ov');
+  check(await page.locator('#ov button', { hasText: 'Pasang di HP' }).count() === 1, 'the account pop-up (tap your name) has "Pasang di HP"');
+  await page.locator('#ov button', { hasText: 'Pasang di HP' }).tap(); await page.waitForSelector('#ov');
+  check(/Tambahkan ke layar utama/.test(await page.textContent('#ov')), '…which shows the install steps');
+  await page.keyboard.press('Escape');
   await page.reload(); await page.waitForSelector('[data-act="new"]');
   check(await page.locator('.install').count() === 0, '…and it stays hidden');
 
@@ -162,6 +168,8 @@ const { serve } = require('./static-server');
   await p2.goto(srv.url + '/index.html?demo=1'); await p2.evaluate(() => localStorage.clear()); await p2.reload();
   await p2.fill('#lname', 'Ani'); await p2.fill('#lpw', 'toko12345'); await p2.click('#loginBtn'); await p2.waitForSelector('[data-act="new"]');
   check(await p2.locator('.install').count() === 0, 'opened as the installed app: no install card');
+  await p2.click('.bar button.who'); await p2.waitForSelector('#ov');
+  check(await p2.locator('#ov button', { hasText: 'Pasang di HP' }).count() === 0, '…and no "Pasang di HP" in the account pop-up');
   await ctx2.close();
 
   await browser.close(); srv.close();

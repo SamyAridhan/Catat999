@@ -41,6 +41,7 @@ Kolom yang **wajib** diisi akan berwarna merah dengan tulisan **Wajib diisi** ka
 - **Terakhir dicatat**: 5 transaksi terakhir dari semua pekerja. Cek di sini sebelum mencatat, supaya tidak dobel.
 - **Muat ulang**: tarik layar ke bawah, atau ketuk tombol **↻** di kanan atas.
 - **Keluar**: ketuk **nama Anda** di kanan atas, lalu ketuk **Keluar**.
+- **Pasang di HP**: kalau aplikasi belum ada di layar utama, ketuk **nama Anda** di kanan atas, lalu **Pasang di HP**.
 
 ## Penting
 - Kata sandi **jangan dibagikan** ke orang di luar toko.

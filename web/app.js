@@ -747,9 +747,11 @@
   function logoutSheet() {
     var n = S.queue.length;
     openSheet('<h2>Akun</h2><p>Masuk sebagai <b>' + esc(S.user ? S.user.name : '') + '</b>' + (isAdmin() ? ' (Admin)' : '') + '.</p>' +
-      (n ? '<p>Masih ada <b>' + n + ' transaksi belum terkirim</b>. Transaksi itu tetap tersimpan di HP dan tetap tercatat atas nama yang mencatatnya.</p>' : '<p>Kalau keluar, nanti harus masuk lagi dengan kata sandi.</p>') +
+      (standalone() ? '' : '<div class="stack"><button class="btn outline icon-btn" data-v="install">' + icon('install') + 'Pasang di HP</button></div><hr class="sep">') +
+      (n ? '<p>Masih ada <b>' + n + ' transaksi belum terkirim</b>. Transaksi itu tetap tersimpan di HP dan tetap tercatat atas nama yang mencatatnya.</p>' : '') +
       '<div class="stack"><button class="btn danger icon-btn" data-v="out">' + icon('logout') + 'Keluar</button><button class="btn outline" data-v="">Batal</button></div>', function (b) {
-        closeSheet(); if (!b.getAttribute('data-v')) return;
+        closeSheet(); var act = b.getAttribute('data-v'); if (!act) return;
+        if (act === 'install') { if (installEvt) { installEvt.prompt(); installEvt = null; } else installHelp(); return; }
         if (S.queue.some(function (o) { return o.token === S.token && o.state === 'waiting'; })) { S.logoutLater.push(S.token); save('logoutLater', S.logoutLater); }
         else api('logout').catch(function () { });
         S.token = ''; S.user = null; drop('token'); drop('user'); S.hist = {}; drop('hist'); S.boot = null; drop('boot'); S.month = ''; S.query = ''; go('login', true);
@@ -862,7 +864,7 @@
       case 'flush': S.queue.forEach(function (o) { o.retryAt = 0; }); toast('Mengirim…'); flush(); break;
       case 'logout': logoutSheet(); break;
       case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; } else installHelp(); break;
-      case 'installHide': S.installHidden = true; save('installHidden', true); render(); break;
+      case 'installHide': S.installHidden = true; save('installHidden', true); render(); toast('Bisa dipasang nanti: ketuk nama Anda di kanan atas.'); break;
       case 'pick': pickName(v); break;
       case 'unpick': S.form.name = ''; S.form.isNew = false; S.form._focus = true; restep('st-name'); break;
       case 'addnew': addNew(); break;
