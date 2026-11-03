@@ -105,16 +105,37 @@
     var qw = strip(q), nw = strip(name);
     if (qw.length && qw.every(function (w) { return nw.some(function (x) { return x.indexOf(w) === 0; }); })) return 0.9;
     if (kn.indexOf(kq) >= 0) return 0.8;
-    // typo tolerance: compare with the whole name, its start, and each word ("yafnido" → YAFINDO)
-    var best = Math.max(dice(kq, kn), dice(kq, kn.slice(0, kq.length + 2)));
-    nw.forEach(function (w) { best = Math.max(best, dice(kq, w) * 1.07); });
-    return Math.min(best * 0.75, 0.79);
+    // typo tolerance ("yafnido" → YAFINDO): the whole name, or every typed word roughly matching a word of the name.
+    // A typed word that matches nothing ("SETOR rokok", "YANTO plastik", "colamas INDAH SEJATI") means it is probably
+    // something else, so the score stays a guess. Words like ANGSUR (installment) don't count against a name.
+    // Tuned on 15,000 names typed in the 999 Mart ledgers 2022–2026.
+    var words = qw.filter(function (w) { return !/^(ANGSUR|ANSGUR|BAYAR|TOKO)$/.test(w); });
+    if (!words.length) return 0;
+    var per = words.map(function (w) { return Math.max.apply(null, nw.map(function (x) { return x.indexOf(w) === 0 ? 1 : dice(w, x); }).concat(0)); });
+    var cover = per.reduce(function (a, b) { return a + b; }, 0) / per.length;
+    var best = Math.max(dice(kq, kn), dice(kq, kn.slice(0, kq.length + 2)), cover);
+    if (words.length > 1 && Math.min.apply(null, per) < 0.5) best = Math.min(best, 0.6);
+    return Math.min(best * 0.95, 0.79);
   }
+  var SURE = 0.66;   // at or above: shown as an answer; below: only under "Mungkin maksudnya:"
   function suppliers() { return (S.boot && S.boot.suppliers) || []; }
   function findSupplier(n) { var k = key(n); var l = suppliers(); for (var i = 0; i < l.length; i++) if (key(l[i]) === k) return l[i]; return ''; }
-  function search(q) {
+  function searchScored(q) {
     return suppliers().map(function (s) { return { s: s, sc: score(q, s) }; }).filter(function (x) { return x.sc >= 0.35; })
-      .sort(function (a, b) { return (b.sc - a.sc) || ((S.usage[b.s] || 0) - (S.usage[a.s] || 0)); }).slice(0, 6).map(function (x) { return x.s; });
+      .sort(function (a, b) { return (b.sc - a.sc) || ((S.usage[b.s] || 0) - (S.usage[a.s] || 0)); }).slice(0, 6);
+  }
+  function search(q) { return searchScored(q).map(function (x) { return x.s; }); }
+  // For "Maksudnya yang ini?": a guess is only offered when every typed word is at least loosely in the name
+  // (a typo "DAYLIS" for DAILYS, a piece "KU" of ADAKU). A word that isn't there at all ("SETOR rokok", "INDAH SEJATI")
+  // means it is something else, so it is saved as the new name instead of being merged into another supplier.
+  function bag(a, b) { var c = {}, x = 0, i; for (i = 0; i < a.length; i++) c[a[i]] = (c[a[i]] || 0) + 1; for (i = 0; i < b.length; i++) if (c[b[i]]) { c[b[i]]--; x++; } return 2 * x / (a.length + b.length); }
+  function wordsFit(q, name) {
+    var split = function (s) { return s.toUpperCase().replace(/^\s*(PT|CV|UD)\b\.?/, '').split(/[^A-Z0-9]+/).filter(Boolean); };
+    var qw = split(q).filter(function (w) { return !/^(ANGSUR|ANSGUR|BAYAR|TOKO|PT|CV|UD)$/.test(w); }), nw = split(name);
+    if (qw.length < 2) return true;
+    return qw.every(function (w) {
+      return nw.some(function (x) { return x.indexOf(w) === 0 || dice(w, x) >= 0.5 || (w.length >= 4 && x.length >= 4 && bag(w, x) >= 0.8) || (w.length >= 2 && x.indexOf(w) > 0); });
+    });
   }
   function frequent() {
     var out = [];
@@ -367,10 +388,14 @@
     var box = $('#sugg'); if (!box) return;
     var q = S.form.q.trim();
     if (!q) { box.innerHTML = ''; return; }
-    var res = search(q);
-    var exact = res.some(function (s) { return key(s) === key(q); });
-    box.innerHTML = '<div class="sugg">' + res.map(function (s) { return '<button data-act="pick" data-v="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') +
+    var res = searchScored(q);
+    var exact = res.some(function (x) { return key(x.s) === key(q); });
+    var btn = function (x) { return '<button data-act="pick" data-v="' + esc(x.s) + '">' + esc(x.s) + '</button>'; };
+    var sure = res.filter(function (x) { return x.sc >= SURE; }), guess = res.filter(function (x) { return x.sc < SURE; }).slice(0, 3);
+    // only confident matches come first; guesses sit below "+ Tambah", so a quick first tap never picks a wrong supplier
+    box.innerHTML = '<div class="sugg">' + sure.map(btn).join('') +
       (!exact && key(q).length >= 2 ? '<button class="add" data-act="addnew">+ Tambah "' + esc(q.toUpperCase()) + '"<small>Kalau tidak ada di daftar</small></button>' : '') +
+      (guess.length ? '<div class="sugg-head">Mungkin maksudnya:</div>' + guess.map(btn).join('') : '') +
       (!res.length && key(q).length < 2 ? '<div class="sugg-empty">Ketik minimal 2 huruf</div>' : '') + '</div>';
   }
   function collect() {
@@ -789,8 +814,7 @@
   function addNew() {
     var q = S.form.q.trim().toUpperCase().replace(/\s+/g, ' ');
     if (!/[A-Z0-9]{2}/.test(q.replace(/[^A-Z0-9]/g, ''))) return;
-    var sim = suppliers().map(function (s) { return { s: s, sc: Math.max(dice(key(q), key(s)), score(q, s)) }; })
-      .filter(function (x) { return x.sc >= 0.55; }).sort(function (a, b) { return b.sc - a.sc; }).slice(0, 3).map(function (x) { return x.s; });
+    var sim = searchScored(q).filter(function (x) { return x.sc >= 0.45 && wordsFit(q, x.s); }).slice(0, 3).map(function (x) { return x.s; });
     if (sim.length) { similarSheet(q, sim); return; }
     S.form.name = q; S.form.isNew = true; S.form.q = ''; S.form.errors.name = ''; render();
   }
@@ -819,6 +843,6 @@
     render: render, collect: collect, renderSugg: renderSugg, toast: toast, uid: uid, shiftNow: shiftNow, daysBetween: daysBetween,
     phoneToday: phoneToday, isAdmin: isAdmin, editDays: editDays, backDays: backDays, loadMonth: loadMonth, findEntry: findEntry,
     curMonth: curMonth, outdated: outdated, step: step,
-    api: api, refresh: refresh, flush: flush, doSave: doSave, endLaterSessions: endLaterSessions, authFail: authFail, SERVER_MSG: SERVER_MSG
+    searchScored: searchScored, SURE: SURE, wordsFit: wordsFit, api: api, refresh: refresh, flush: flush, doSave: doSave, endLaterSessions: endLaterSessions, authFail: authFail, SERVER_MSG: SERVER_MSG
   };
 })();
