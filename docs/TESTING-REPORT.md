@@ -124,3 +124,4 @@ The bugs the tests still miss are mostly harmless. Some behave the same as the r
 These need the real environment and can't be tested here:
 - **Real Google Sheets:** run `setup` once on a real Sheet and do one entry from a phone. The mock behaves like Sheets, but it isn't Sheets.
 - **Screen reader:** give the app a quick try with TalkBack on an Android phone.
+- The full step-by-step list is in [REAL-PHONE-TEST.md](REAL-PHONE-TEST.md).
