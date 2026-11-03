@@ -38,7 +38,7 @@ Workers record **payments that have already happened** (supplier invoices paid b
 | 18 | Required fields are marked "Wajib diisi" | R17, U05 | app-logic, render |
 | 19 | The amount is spelled out in words, so wrong zeros are easy to spot | U06 | app-logic |
 | 20 | Rp 20 juta and above shows a "Nominal besar" warning; Rp 500 juta is the maximum | R18, U13 | ui, edge |
-| 21 | Pay source: Transfer Ibu / Uang Kasir / Modal, or Lainnya with whose money | R16, U12 | contract, edge |
+| 21 | Pay source: Transfer Ibu (pre-selected for new entries) / Uang Kasir / Modal, or Lainnya with whose money | R16, U12 | contract, edge |
 | 22 | Dates are tapped, not typed: Hari ini, Kemarin, calendar; never in the future; workers ≤ 60 days back, Ibu ≤ 400 | R19, U07, U21 | edge, app-logic |
 | 23 | Invoice numbers: letters, digits, `- / .`, at most 30 characters | R20 | edge |
 | 24 | Saved entries go to Data with who recorded them and when, and to the Log | R14, U09 | backend, snapshot |

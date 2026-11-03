@@ -74,7 +74,7 @@ const initMutant = ACTIVE_MUTANT ? `globalThis.__stryker__ = globalThis.__stryke
   await shot('form-empty');
   await tap('Lanjut');
   await wait(300);
-  ok(await page.locator('.step.has-err').count() === 3, 'form: 3 required fields flagged (nama, nominal, bayar pakai)');
+  ok(await page.locator('.step.has-err').count() === 2, 'form: 2 required fields flagged (nama, nominal); bayar pakai starts on Transfer Ibu');
   ok((await text('#st-amt .err-msg')) === 'Wajib diisi.', 'form: error text is "Wajib diisi."');
   ok(await page.locator('#st-inv.has-err, #st-note.has-err').count() === 0, 'form: optional fields are never flagged');
   await shot('form-errors');

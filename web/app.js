@@ -355,7 +355,8 @@
 
   // ── form (new + edit) ──
   function newForm(src) {
-    var f = { mode: 'new', id: '', name: '', isNew: false, invoice: '', amount: 0, paidFrom: '', other: '', date: today(), note: '', q: '', errors: {}, orig: null };
+    // new entries start on Transfer Ibu (most payments in the ledger are PT invoices Ibu transfers); edits keep their own
+    var f = { mode: 'new', id: '', name: '', isNew: false, invoice: '', amount: 0, paidFrom: 'Transfer Ibu', other: '', date: today(), note: '', q: '', errors: {}, orig: null };
     if (src) {
       var m = /^Lainnya: (.*)$/.exec(src.paidFrom || '');
       // a pay source typed by hand in the Sheet (e.g. "Cash") isn't one of the buttons: ask again instead of failing at the server

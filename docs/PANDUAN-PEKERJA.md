@@ -15,7 +15,7 @@ Catat 999 dipakai **setelah transaksi dibayar**. Ini menggantikan mengetik ke sp
    - Kalau muncul **"Maksudnya yang ini?"**, pilih nama yang sama supaya catatan rapi.
 3. **No. Invoice** *(opsional)*: salin dari kertas invoice. Kosongkan kalau tidak ada.
 4. **Nominal**: ketik angkanya saja. Cek tulisan hijau di bawahnya, harus sama dengan invoice.
-5. **Bayar pakai**: uangnya dari mana?
+5. **Bayar pakai**: uangnya dari mana? Sudah terpilih **Transfer Ibu**. **Ganti** kalau uangnya dari tempat lain:
    - **Transfer Ibu**: Ibu yang transfer.
    - **Uang Kasir**: diambil dari laci kasir.
    - **Modal**: dari uang modal.
